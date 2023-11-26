@@ -53,6 +53,7 @@ import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
 
 // TODO add Javadoc
+// TODO Add README
 // TODO add minio client all params support
 // TODO update Unit tests
 public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.remote.storage.RemoteStorageManager {
