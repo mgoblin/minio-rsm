@@ -127,4 +127,73 @@ class NameAssignerTest {
         assertEquals("PutS3Names{logSegmentName='/tieredTopic-0/00000000000000001000'}", names.toString());
     }
 
+    @Test
+    public void NullTopicName() {
+        final String topicName = null;
+        final int partition = 0;
+        final TopicPartition topicPartition = new TopicPartition(topicName, partition);
+
+        final Uuid topicUuid = Uuid.randomUuid();
+        final TopicIdPartition topicIdPartition = new TopicIdPartition(topicUuid, topicPartition);
+
+        final Uuid segmentUuid = Uuid.randomUuid();
+        final long segmentStartOffset = 0L;
+        final long segmentEndOffset = 1000L;
+        final long segmentMaxTimestampMs = 10000L;
+        final int brokerId = 0;
+        final long segmentEventTimestampMs = 10001L;
+        final int segmentSizeInBytes = 10;
+
+        final RemoteLogSegmentId remoteLogSegmentId = new RemoteLogSegmentId(topicIdPartition, segmentUuid);
+
+        final var metadata = new RemoteLogSegmentMetadata(
+                remoteLogSegmentId,
+                segmentStartOffset,
+                segmentEndOffset,
+                segmentMaxTimestampMs,
+                brokerId,
+                segmentEventTimestampMs,
+                segmentSizeInBytes,
+                Optional.empty(),
+                RemoteLogSegmentState.COPY_SEGMENT_STARTED,
+                Map.of(1, 0L));
+
+        assertThrows(IllegalArgumentException.class, () -> new NameAssigner(metadata));
+    }
+
+    @Test
+    public void testNegativePartition() {
+        final String topicName = "topic1";
+        final int partition = -1;
+        final TopicPartition topicPartition = new TopicPartition(topicName, partition);
+
+        final Uuid topicUuid = Uuid.randomUuid();
+        final TopicIdPartition topicIdPartition = new TopicIdPartition(topicUuid, topicPartition);
+
+        final Uuid segmentUuid = Uuid.randomUuid();
+        final long segmentStartOffset = 0L;
+        final long segmentEndOffset = 1000L;
+        final long segmentMaxTimestampMs = 10000L;
+        final int brokerId = 0;
+        final long segmentEventTimestampMs = 10001L;
+        final int segmentSizeInBytes = 10;
+
+        final RemoteLogSegmentId remoteLogSegmentId = new RemoteLogSegmentId(topicIdPartition, segmentUuid);
+
+        final var metadata = new RemoteLogSegmentMetadata(
+                remoteLogSegmentId,
+                segmentStartOffset,
+                segmentEndOffset,
+                segmentMaxTimestampMs,
+                brokerId,
+                segmentEventTimestampMs,
+                segmentSizeInBytes,
+                Optional.empty(),
+                RemoteLogSegmentState.COPY_SEGMENT_STARTED,
+                Map.of(1, 0L));
+
+        assertThrows(IllegalArgumentException.class, () -> new NameAssigner(metadata));
+
+    }
+
 }
