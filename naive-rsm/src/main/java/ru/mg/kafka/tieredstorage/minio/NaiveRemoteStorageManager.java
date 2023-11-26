@@ -254,9 +254,8 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         final NameAssigner nameAssigner = new NameAssigner(remoteLogSegmentMetadata);
         final String segmentObjectName = nameAssigner.logSegmentObjectName();
 
-        final byte allIndexesBitmap = (byte) 0xff;
         final byte metadataBitmap = remoteLogSegmentMetadata.customMetadata()
-                .orElse(new RemoteLogSegmentMetadata.CustomMetadata(new byte[]{allIndexesBitmap})).value()[0];
+                .orElse(new RemoteLogSegmentMetadata.CustomMetadata(new byte[]{0})).value()[0];
 
         final ByteEncodedMetadata byteEncodedMetadata = new ByteEncodedMetadata(metadataBitmap);
         final boolean isDataPresent = byteEncodedMetadata.isDataNotEmpty();
@@ -298,9 +297,8 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         final NameAssigner nameAssigner = new NameAssigner(remoteLogSegmentMetadata);
         final String segmentObjectName = nameAssigner.logSegmentObjectName();
 
-        final byte allIndexesBitmap = (byte) 0xff;
         final byte metadataBitmap = remoteLogSegmentMetadata.customMetadata()
-                .orElse(new RemoteLogSegmentMetadata.CustomMetadata(new byte[]{allIndexesBitmap})).value()[0];
+                .orElse(new RemoteLogSegmentMetadata.CustomMetadata(new byte[]{0})).value()[0];
 
         final ByteEncodedMetadata byteEncodedMetadata = new ByteEncodedMetadata(metadataBitmap);
         final boolean isDataPresent = byteEncodedMetadata.isDataNotEmpty();
@@ -529,7 +527,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         if (initialized) {
             return config.getMinioBucketName();
         } else {
-            throw new IllegalStateException("Remote Storage Manager is not initialized");
+            throw new IllegalArgumentException("Remote Storage Manager is not initialized");
         }
     }
 }
