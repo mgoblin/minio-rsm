@@ -294,6 +294,95 @@ public class NaiveRemoteStorageManagerTest {
     }
 
     @Test
+    public void testCopyLogSegmentDataWithoutTnxIndex() throws Exception {
+        final var minioClientMock = mock(io.minio.MinioClient.class);
+        Assertions.assertNotNull(minioClientMock);
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
+            remoteStorageManager.configure(Map.of(
+                    "minio.url", "http://0.0.0.0",
+                    "minio.access.key", "access key",
+                    "minio.secret.key", "secret key",
+                    "minio.auto.create.bucket", false
+            ));
+
+            when(minioClientMock.putObject(any(io.minio.PutObjectArgs.class)))
+                    .thenReturn(new io.minio.ObjectWriteResponse(
+                            okhttp3.Headers.of(),
+                            remoteStorageManager.getBucketName(),
+                            "",
+                            "",
+                            "",
+                            ""));
+
+
+            final String topicName = "tieredTopic";
+            final int partition = 0;
+            final TopicPartition topicPartition = new TopicPartition(topicName, partition);
+
+            final Uuid topicUuid = Uuid.randomUuid();
+            final TopicIdPartition topicIdPartition = new TopicIdPartition(topicUuid, topicPartition);
+
+            final Uuid segmentUuid = Uuid.randomUuid();
+            final long segmentStartOffset = 0L;
+            final long segmentEndOffset = 1000L;
+            final long segmentMaxTimestampMs = 10000L;
+            final int brokerId = 0;
+            final long segmentEventTimestampMs = 10001L;
+            final int segmentSizeInBytes = 10;
+
+            final RemoteLogSegmentId remoteLogSegmentId = new RemoteLogSegmentId(topicIdPartition, segmentUuid);
+
+            final RemoteLogSegmentMetadata remoteLogSegmentMetadata = new RemoteLogSegmentMetadata(
+                    remoteLogSegmentId,
+                    segmentStartOffset,
+                    segmentEndOffset,
+                    segmentMaxTimestampMs,
+                    brokerId,
+                    segmentEventTimestampMs,
+                    segmentSizeInBytes,
+                    Optional.empty(),
+                    RemoteLogSegmentState.COPY_SEGMENT_STARTED,
+                    Map.of(1, 0L));
+
+            final var logSegment = Path.of("./src/test/testData/test.log").normalize().toAbsolutePath();
+            final var offsetIndex = Path.of("./src/test/testData/test.index");
+            final var timeIndex = Path.of("./src/test/testData/test.timeindex");
+            final Optional<Path> transactionalIndex = Optional.empty();
+            final var producerSnapshotIndex = Path.of("./src/test/testData/test.snapshot");
+            final var leaderEpochIndex = ByteBuffer.allocate(0);
+
+            final var logSegmentData = new LogSegmentData(
+                    logSegment,
+                    offsetIndex,
+                    timeIndex,
+                    transactionalIndex,
+                    producerSnapshotIndex,
+                    leaderEpochIndex);
+
+            final var customMetadataActual = remoteStorageManager.copyLogSegmentData(
+                    remoteLogSegmentMetadata,
+                    logSegmentData);
+
+            final var copyMetadataExpected = new ByteEncodedMetadata();
+            copyMetadataExpected.setDataNotEmpty(true);
+            copyMetadataExpected.setIndexNotEmpty(true);
+            copyMetadataExpected.setTimeIndexNotEmpty(true);
+            copyMetadataExpected.setTransactionIndexNotEmpty(false);
+            copyMetadataExpected.setProducerSnapshotIndexNotEmpty(true);
+            copyMetadataExpected.setLeaderEpochIndexNotEmpty(true);
+
+            assertTrue(customMetadataActual.isPresent());
+            final var copyMetadataActual = new ByteEncodedMetadata(customMetadataActual.get().value()[0]);
+
+            assertEquals(copyMetadataExpected, copyMetadataActual);
+
+            verify(minioClientMock, times(5)).putObject(any(io.minio.PutObjectArgs.class));
+        }
+
+    }
+
+    @Test
     public void testCopySegmentDataOnIOException() throws Exception {
         final var minioClientMock = mock(io.minio.MinioClient.class);
         Assertions.assertNotNull(minioClientMock);
@@ -1272,7 +1361,7 @@ public class NaiveRemoteStorageManagerTest {
     }
 
     @Test
-    public void testDeleteSegmentError() {
+    public void testDeleteSegmentException() {
         final var minioClientMock = mock(io.minio.MinioClient.class);
         Assertions.assertNotNull(minioClientMock);
 
@@ -1316,6 +1405,65 @@ public class NaiveRemoteStorageManagerTest {
 
             final Iterable<Result<DeleteError>> response = List.of(
                     new Result<>(new IOException())
+            );
+
+            when(minioClientMock.removeObjects(any(io.minio.RemoveObjectsArgs.class)))
+                    .thenReturn(response);
+
+
+            assertThrows(
+                    RemoteStorageException.class,
+                    () -> remoteStorageManager.deleteLogSegmentData(remoteLogSegmentMetadata));
+
+            verify(minioClientMock, times(1)).removeObjects(any());
+        }
+    }
+
+    @Test
+    public void testDeleteSegmentError() {
+        final var minioClientMock = mock(io.minio.MinioClient.class);
+        Assertions.assertNotNull(minioClientMock);
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
+            remoteStorageManager.configure(Map.of(
+                    "minio.url", "http://0.0.0.0",
+                    "minio.access.key", "access key",
+                    "minio.secret.key", "secret key",
+                    "minio.auto.create.bucket", false
+            ));
+
+            final String topicName = "tieredTopic";
+            final int partition = 0;
+            final TopicPartition topicPartition = new TopicPartition(topicName, partition);
+
+            final Uuid topicUuid = Uuid.randomUuid();
+            final TopicIdPartition topicIdPartition = new TopicIdPartition(topicUuid, topicPartition);
+
+            final Uuid segmentUuid = Uuid.randomUuid();
+            final long segmentStartOffset = 0L;
+            final long segmentEndOffset = 1000L;
+            final long segmentMaxTimestampMs = 10000L;
+            final int brokerId = 0;
+            final long segmentEventTimestampMs = 10001L;
+            final int segmentSizeInBytes = 10;
+
+            final RemoteLogSegmentId remoteLogSegmentId = new RemoteLogSegmentId(topicIdPartition, segmentUuid);
+
+            final RemoteLogSegmentMetadata remoteLogSegmentMetadata = new RemoteLogSegmentMetadata(
+                    remoteLogSegmentId,
+                    segmentStartOffset,
+                    segmentEndOffset,
+                    segmentMaxTimestampMs,
+                    brokerId,
+                    segmentEventTimestampMs,
+                    segmentSizeInBytes,
+                    Optional.of(new RemoteLogSegmentMetadata.CustomMetadata(new byte[] {(byte) 63})),
+                    RemoteLogSegmentState.COPY_SEGMENT_STARTED,
+                    Map.of(1, 0L));
+
+
+            final Iterable<Result<DeleteError>> response = List.of(
+                    new Result<>(new DeleteError())
             );
 
             when(minioClientMock.removeObjects(any(io.minio.RemoveObjectsArgs.class)))

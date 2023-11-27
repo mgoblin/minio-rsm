@@ -39,12 +39,9 @@ import io.minio.BucketExistsArgs;
 import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
-import io.minio.ObjectWriteResponse;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectsArgs;
-import io.minio.Result;
 import io.minio.errors.MinioException;
-import io.minio.messages.DeleteError;
 import io.minio.messages.DeleteObject;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -55,7 +52,6 @@ import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
 // TODO add Javadoc
 // TODO Add README
 // TODO add minio client all params support
-// TODO update Unit tests
 public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.remote.storage.RemoteStorageManager {
     private static final int MIN_PART_SIZE = 5 * 1024 * 1024; // 5 MiB
     private static final Logger log = LoggerFactory.getLogger(NaiveRemoteStorageManager.class);
@@ -152,65 +148,70 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
     private boolean copySegmentData(final Path srcPath, final String dstObjectName)
             throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
-        return writeFileByPathToMinio(
+        writeFileByPathToMinio(
                 srcPath,
                 config.getMinioBucketName(),
                 dstObjectName,
-                "segment data") != null;
+                "segment data");
+        return true;
     }
 
     private boolean copyOffsetIndex(final Path srcPath, final String dstObjectName)
             throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
-        return writeFileByPathToMinio(
+        writeFileByPathToMinio(
                 srcPath,
                 config.getMinioBucketName(),
                 dstObjectName,
-                "offset index") != null;
+                "offset index");
+        return true;
     }
 
     private boolean copyTimeIndex(final Path srcPath, final String dstObjectName)
             throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
-        return writeFileByPathToMinio(
+        writeFileByPathToMinio(
                 srcPath,
                 config.getMinioBucketName(),
                 dstObjectName,
-                "time index") != null;
+                "time index");
+        return true;
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     private boolean copyTransactionalIndex(final Optional<Path> maybeSrcPath, final String dstObjectName)
             throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
         if (maybeSrcPath.isPresent()) {
-            return writeFileByPathToMinio(
+            writeFileByPathToMinio(
                     maybeSrcPath.get(),
                     config.getMinioBucketName(),
                     dstObjectName,
-                    "transactional index") != null;
+                    "transactional index");
         } else {
             log.debug("Transactional index is empty, dont write it");
-            return false;
         }
+        return maybeSrcPath.isPresent();
     }
 
     private boolean copyProducerSnapshotIndex(final Path srcPath, final String dstObjectName)
             throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
-        return writeFileByPathToMinio(
+        writeFileByPathToMinio(
                 srcPath,
                 config.getMinioBucketName(),
                 dstObjectName,
-                "producer snapshot index") != null;
+                "producer snapshot index");
+        return true;
     }
 
     private boolean copyLeaderEpochIndex(final ByteBuffer data,  final String dstObjectName)
             throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
-        return writeByteBufferToMinio(
+        writeByteBufferToMinio(
                 data,
                 config.getMinioBucketName(),
                 dstObjectName,
-                "leader epoch index") != null;
+                "leader epoch index");
+        return true;
     }
 
-    private ObjectWriteResponse writeFileByPathToMinio(final Path srcPath,
+    private void writeFileByPathToMinio(final Path srcPath,
                                                        final String bucketName,
                                                        final String objectName,
                                                        final String entityName
@@ -221,17 +222,17 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         final var bytes = FileUtils.readFileToByteArray(localFilePath.toFile());
         final ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
 
-        return writeByteBufferToMinio(byteBuffer, bucketName, objectName, entityName);
+        writeByteBufferToMinio(byteBuffer, bucketName, objectName, entityName);
     }
 
-    private ObjectWriteResponse writeByteBufferToMinio(final ByteBuffer buffer,
+    private void writeByteBufferToMinio(final ByteBuffer buffer,
                                                  final String bucketName,
                                                  final String objectName,
                                                  final String entityName
     ) throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
 
         try (final var logSegmentInputStream = new ByteBufferInputStream(buffer)) {
-            final ObjectWriteResponse objectWriteResponse = minioClient.putObject(
+            minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
                             .object(objectName)
@@ -242,7 +243,6 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                             .build()
             );
             log.debug("Copy {} to bucket {} with name {}", entityName, bucketName, objectName);
-            return objectWriteResponse;
         }
     }
 
@@ -448,10 +448,11 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                         .objects(deleteObjects)
                         .build());
 
-
-        for (final Result<DeleteError> result : results) {
+        if (results.iterator().hasNext()) {
             try {
-                result.get();
+                final var error = results.iterator().next().get();
+                log.error("Delete segment files {} error {}", names.getBaseName(), error.message());
+                throw new RemoteStorageException(error.message());
             } catch (MinioException | IOException | InvalidKeyException | NoSuchAlgorithmException e) {
                 log.error("Delete segment files {} error", names.getBaseName(), e);
                 throw new RemoteStorageException(
