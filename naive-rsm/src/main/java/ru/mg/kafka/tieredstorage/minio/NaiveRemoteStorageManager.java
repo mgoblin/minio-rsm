@@ -453,9 +453,10 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
             try {
                 result.get();
             } catch (MinioException | IOException | InvalidKeyException | NoSuchAlgorithmException e) {
-                log.error("Delete segment {} error", names.getBaseName(), e);
+                log.error("Delete segment files {} error", names.getBaseName(), e);
+                throw new RemoteStorageException(
+                        String.format("Delete segment files %s error", names.getBaseName()), e);
             }
-            throw new RemoteStorageException("Delete segment error");
         }
         log.debug("Delete log files {} finished", names.getBaseName());
     }

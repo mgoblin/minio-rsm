@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -1266,6 +1267,65 @@ public class NaiveRemoteStorageManagerTest {
 
 
             remoteStorageManager.deleteLogSegmentData(remoteLogSegmentMetadata);
+            verify(minioClientMock, times(1)).removeObjects(any());
+        }
+    }
+
+    @Test
+    public void testDeleteSegmentError() {
+        final var minioClientMock = mock(io.minio.MinioClient.class);
+        Assertions.assertNotNull(minioClientMock);
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
+            remoteStorageManager.configure(Map.of(
+                    "minio.url", "http://0.0.0.0",
+                    "minio.access.key", "access key",
+                    "minio.secret.key", "secret key",
+                    "minio.auto.create.bucket", false
+            ));
+
+            final String topicName = "tieredTopic";
+            final int partition = 0;
+            final TopicPartition topicPartition = new TopicPartition(topicName, partition);
+
+            final Uuid topicUuid = Uuid.randomUuid();
+            final TopicIdPartition topicIdPartition = new TopicIdPartition(topicUuid, topicPartition);
+
+            final Uuid segmentUuid = Uuid.randomUuid();
+            final long segmentStartOffset = 0L;
+            final long segmentEndOffset = 1000L;
+            final long segmentMaxTimestampMs = 10000L;
+            final int brokerId = 0;
+            final long segmentEventTimestampMs = 10001L;
+            final int segmentSizeInBytes = 10;
+
+            final RemoteLogSegmentId remoteLogSegmentId = new RemoteLogSegmentId(topicIdPartition, segmentUuid);
+
+            final RemoteLogSegmentMetadata remoteLogSegmentMetadata = new RemoteLogSegmentMetadata(
+                    remoteLogSegmentId,
+                    segmentStartOffset,
+                    segmentEndOffset,
+                    segmentMaxTimestampMs,
+                    brokerId,
+                    segmentEventTimestampMs,
+                    segmentSizeInBytes,
+                    Optional.of(new RemoteLogSegmentMetadata.CustomMetadata(new byte[] {(byte) 63})),
+                    RemoteLogSegmentState.COPY_SEGMENT_STARTED,
+                    Map.of(1, 0L));
+
+
+            final Iterable<Result<DeleteError>> response = List.of(
+                    new Result<>(new IOException())
+            );
+
+            when(minioClientMock.removeObjects(any(io.minio.RemoveObjectsArgs.class)))
+                    .thenReturn(response);
+
+
+            assertThrows(
+                    RemoteStorageException.class,
+                    () -> remoteStorageManager.deleteLogSegmentData(remoteLogSegmentMetadata));
+
             verify(minioClientMock, times(1)).removeObjects(any());
         }
     }
