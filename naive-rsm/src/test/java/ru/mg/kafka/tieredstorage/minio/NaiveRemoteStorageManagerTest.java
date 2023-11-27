@@ -1268,7 +1268,6 @@ public class NaiveRemoteStorageManagerTest {
             remoteStorageManager.deleteLogSegmentData(remoteLogSegmentMetadata);
             verify(minioClientMock, times(1)).removeObjects(any());
         }
-
     }
 
 }

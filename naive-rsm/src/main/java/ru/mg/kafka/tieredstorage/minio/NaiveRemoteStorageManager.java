@@ -81,7 +81,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
     }
 
     private void ensureInitialized() {
-        if (!initialized) {
+        if (!initialized && config != null) {
             log.debug("Remote log manager not initialized. Try to initialize.");
             configure(config.originals());
             log.info(
