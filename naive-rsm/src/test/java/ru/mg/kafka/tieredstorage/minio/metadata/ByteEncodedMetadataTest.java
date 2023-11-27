@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ByteEncodedMetadataTest {
@@ -86,7 +87,7 @@ class ByteEncodedMetadataTest {
 
     @Test
     void isIndexOfTypePresent() {
-        final var byteEncodedMetadata = new  ByteEncodedMetadata((byte) 63);
+        final var byteEncodedMetadata = new ByteEncodedMetadata((byte) 63);
         assertEquals(63, byteEncodedMetadata.getValue());
 
         assertTrue(byteEncodedMetadata.isIndexOfTypePresent(RemoteStorageManager.IndexType.OFFSET));
@@ -94,6 +95,9 @@ class ByteEncodedMetadataTest {
         assertTrue(byteEncodedMetadata.isIndexOfTypePresent(RemoteStorageManager.IndexType.TRANSACTION));
         assertTrue(byteEncodedMetadata.isIndexOfTypePresent(RemoteStorageManager.IndexType.PRODUCER_SNAPSHOT));
         assertTrue(byteEncodedMetadata.isIndexOfTypePresent(RemoteStorageManager.IndexType.LEADER_EPOCH));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> byteEncodedMetadata.isIndexOfTypePresent(null));
     }
 
     @Test

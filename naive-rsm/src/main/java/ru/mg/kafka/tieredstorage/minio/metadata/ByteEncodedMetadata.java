@@ -108,6 +108,7 @@ public final class ByteEncodedMetadata {
             case PRODUCER_SNAPSHOT -> isProducerSnapshotIndexNotEmpty();
             case TRANSACTION -> isTransactionIndexNotEmpty();
             case LEADER_EPOCH -> isLeaderEpochIndexNotEmpty();
+            case null, default -> throw new IllegalArgumentException("index type should be not null");
         };
     }
 

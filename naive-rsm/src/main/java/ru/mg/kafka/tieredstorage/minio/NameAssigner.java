@@ -140,18 +140,14 @@ public class NameAssigner {
      * @return S3 object name for index type
      */
     public String indexNameByType(final RemoteStorageManager.IndexType indexType) {
-        try {
-            Objects.requireNonNull(indexType);
-            return switch (indexType) {
-                case OFFSET -> indexObjectName();
-                case TIMESTAMP -> timeIndexObjectName();
-                case PRODUCER_SNAPSHOT -> producerSnapshotObjectName();
-                case TRANSACTION -> transactionIndexObjectName();
-                case LEADER_EPOCH -> leaderEpochObjectName();
-            };
-        } catch (final NullPointerException e) {
-            throw new IllegalArgumentException("Index type should be not null", e);
-        }
+        return switch (indexType) {
+            case OFFSET -> indexObjectName();
+            case TIMESTAMP -> timeIndexObjectName();
+            case PRODUCER_SNAPSHOT -> producerSnapshotObjectName();
+            case TRANSACTION -> transactionIndexObjectName();
+            case LEADER_EPOCH -> leaderEpochObjectName();
+            case null, default -> throw new IllegalArgumentException("Index type should be not null");
+        };
     }
 
     /**

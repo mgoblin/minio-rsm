@@ -34,9 +34,8 @@ subprojects {
         mavenCentral()
     }
 
-    java.sourceCompatibility = JavaVersion.VERSION_17
-    java.targetCompatibility = JavaVersion.VERSION_17
-
+//    java.sourceCompatibility = JavaVersion.VERSION_21
+//    java.targetCompatibility = JavaVersion.VERSION_21
 
     configure<CheckstyleExtension> {
         toolVersion = "10.12.0"
@@ -66,6 +65,11 @@ subprojects {
 //    }
 
     tasks {
+        withType<JavaCompile> {
+            sourceCompatibility = "21"
+            targetCompatibility = "21"
+        }
+
         val sourcesJar by creating(Jar::class) {
             archiveClassifier.set("sources")
             from(sourceSets.main.get().allSource)
