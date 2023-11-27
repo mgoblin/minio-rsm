@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.apache.kafka.common.utils.ByteBufferInputStream;
 import org.apache.kafka.server.log.remote.storage.LogSegmentData;
@@ -40,9 +39,8 @@ import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
-import io.minio.RemoveObjectsArgs;
+import io.minio.RemoveObjectArgs;
 import io.minio.errors.MinioException;
-import io.minio.messages.DeleteObject;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -436,27 +434,18 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                 names.producerSnapshotIndexObjectName(),
                 names.leaderEpochIndexObjectName()
         );
-        final var  deleteObjects = segmentObjectNames.stream()
-                .map(DeleteObject::new)
-                .collect(Collectors.toList());
 
         log.debug("Objects for delete from {} are {}", names.getBaseName(), segmentObjectNames);
 
-        final var results = minioClient.removeObjects(
-                RemoveObjectsArgs.builder()
-                        .bucket(config.getMinioBucketName())
-                        .objects(deleteObjects)
-                        .build());
-
-        if (results.iterator().hasNext()) {
+        for (final String dataObjectName: segmentObjectNames) {
             try {
-                final var error = results.iterator().next().get();
-                log.error("Delete segment files {} error {}", names.getBaseName(), error.message());
-                throw new RemoteStorageException(error.message());
+                minioClient.removeObject(
+                        RemoveObjectArgs.builder()
+                            .bucket(getBucketName())
+                            .object(dataObjectName)
+                            .build());
             } catch (MinioException | IOException | InvalidKeyException | NoSuchAlgorithmException e) {
-                log.error("Delete segment files {} error", names.getBaseName(), e);
-                throw new RemoteStorageException(
-                        String.format("Delete segment files %s error", names.getBaseName()), e);
+                log.error("Delete {} from {} error", dataObjectName, getBucketName());
             }
         }
         log.debug("Delete log files {} finished", names.getBaseName());
