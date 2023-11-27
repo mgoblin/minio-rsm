@@ -371,9 +371,8 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
         final NameAssigner nameAssigner = new NameAssigner(remoteLogSegmentMetadata);
         final String indexObjectName = nameAssigner.indexNameByType(indexType);
-        final byte allIndexesBitmap = (byte) 0xff;
         final byte metadataBitmap = remoteLogSegmentMetadata.customMetadata()
-                .orElse(new RemoteLogSegmentMetadata.CustomMetadata(new byte[]{allIndexesBitmap})).value()[0];
+                .orElse(new RemoteLogSegmentMetadata.CustomMetadata(new byte[]{0})).value()[0];
 
         log.debug("Fetch index {} from {} with bitmap {} started", indexType, indexObjectName, metadataBitmap);
 
@@ -410,7 +409,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
             return new ByteArrayInputStream(body);
         } else {
-            log.debug("Fetch index {} with path {} masked by custom metadata.",
+            log.debug("Fetch index {} with path {} cancelled by custom metadata.",
                     indexType,
                     indexObjectName);
             return InputStream.nullInputStream();
