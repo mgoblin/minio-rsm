@@ -127,7 +127,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                     names.leaderEpochObjectName());
             copyMetadata.setLeaderEpochIndexNotEmpty(isLeaderEpochCopied);
 
-            final byte[] metadataBitmap = new byte[]{copyMetadata.getValue()};
+            final byte[] metadataBitmap = new byte[]{copyMetadata.getByteValue()};
             log.trace("Metadata bitmap is {} for {}", metadataBitmap, names.getBaseName());
 
             final var customMetadata = new RemoteLogSegmentMetadata.CustomMetadata(metadataBitmap);

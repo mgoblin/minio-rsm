@@ -29,66 +29,66 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ByteEncodedMetadataTest {
 
     @Test
-    void getValue() {
+    void testGetByteValue() {
         final var byteEncodedMetadata = new ByteEncodedMetadata((byte) 0);
-        assertEquals(0, byteEncodedMetadata.getValue());
+        assertEquals(0, byteEncodedMetadata.getByteValue());
 
         byteEncodedMetadata.setDataNotEmpty(true);
-        assertEquals(1, byteEncodedMetadata.getValue());
+        assertEquals(1, byteEncodedMetadata.getByteValue());
         assertTrue(byteEncodedMetadata.isDataNotEmpty());
         byteEncodedMetadata.setDataNotEmpty(false);
-        assertEquals(0, byteEncodedMetadata.getValue());
+        assertEquals(0, byteEncodedMetadata.getByteValue());
         assertFalse(byteEncodedMetadata.isDataNotEmpty());
         byteEncodedMetadata.setDataNotEmpty(true);
 
         byteEncodedMetadata.setIndexNotEmpty(true);
-        assertEquals(3, byteEncodedMetadata.getValue());
+        assertEquals(3, byteEncodedMetadata.getByteValue());
         assertTrue(byteEncodedMetadata.isIndexNotEmpty());
         byteEncodedMetadata.setIndexNotEmpty(false);
-        assertEquals(1, byteEncodedMetadata.getValue());
+        assertEquals(1, byteEncodedMetadata.getByteValue());
         assertFalse(byteEncodedMetadata.isIndexNotEmpty());
         byteEncodedMetadata.setIndexNotEmpty(true);
 
         byteEncodedMetadata.setTimeIndexNotEmpty(true);
-        assertEquals(7, byteEncodedMetadata.getValue());
+        assertEquals(7, byteEncodedMetadata.getByteValue());
         assertTrue(byteEncodedMetadata.isTimeIndexNotEmpty());
         byteEncodedMetadata.setTimeIndexNotEmpty(false);
-        assertEquals(3, byteEncodedMetadata.getValue());
+        assertEquals(3, byteEncodedMetadata.getByteValue());
         assertFalse(byteEncodedMetadata.isTimeIndexNotEmpty());
         byteEncodedMetadata.setTimeIndexNotEmpty(true);
 
         byteEncodedMetadata.setTransactionIndexNotEmpty(true);
-        assertEquals(15, byteEncodedMetadata.getValue());
+        assertEquals(15, byteEncodedMetadata.getByteValue());
         assertTrue(byteEncodedMetadata.isTransactionIndexNotEmpty());
         byteEncodedMetadata.setTransactionIndexNotEmpty(false);
-        assertEquals(7, byteEncodedMetadata.getValue());
+        assertEquals(7, byteEncodedMetadata.getByteValue());
         assertFalse(byteEncodedMetadata.isTransactionIndexNotEmpty());
         byteEncodedMetadata.setTransactionIndexNotEmpty(true);
 
         byteEncodedMetadata.setProducerSnapshotIndexNotEmpty(true);
-        assertEquals(31, byteEncodedMetadata.getValue());
+        assertEquals(31, byteEncodedMetadata.getByteValue());
         assertTrue(byteEncodedMetadata.isProducerSnapshotIndexNotEmpty());
         byteEncodedMetadata.setProducerSnapshotIndexNotEmpty(false);
-        assertEquals(15, byteEncodedMetadata.getValue());
+        assertEquals(15, byteEncodedMetadata.getByteValue());
         assertFalse(byteEncodedMetadata.isProducerSnapshotIndexNotEmpty());
         byteEncodedMetadata.setProducerSnapshotIndexNotEmpty(true);
 
         byteEncodedMetadata.setLeaderEpochIndexNotEmpty(true);
-        assertEquals(63, byteEncodedMetadata.getValue());
+        assertEquals(63, byteEncodedMetadata.getByteValue());
         assertTrue(byteEncodedMetadata.isLeaderEpochIndexNotEmpty());
         byteEncodedMetadata.setLeaderEpochIndexNotEmpty(false);
-        assertEquals(31, byteEncodedMetadata.getValue());
+        assertEquals(31, byteEncodedMetadata.getByteValue());
         assertFalse(byteEncodedMetadata.isLeaderEpochIndexNotEmpty());
         byteEncodedMetadata.setLeaderEpochIndexNotEmpty(true);
 
         final var max = new  ByteEncodedMetadata((byte) 0b11111111);
-        assertEquals(63, max.getValue());
+        assertEquals(63, max.getByteValue());
     }
 
     @Test
     void isIndexOfTypePresent() {
         final var byteEncodedMetadata = new ByteEncodedMetadata((byte) 63);
-        assertEquals(63, byteEncodedMetadata.getValue());
+        assertEquals(63, byteEncodedMetadata.getByteValue());
 
         assertTrue(byteEncodedMetadata.isIndexOfTypePresent(RemoteStorageManager.IndexType.OFFSET));
         assertTrue(byteEncodedMetadata.isIndexOfTypePresent(RemoteStorageManager.IndexType.TIMESTAMP));
@@ -127,6 +127,6 @@ class ByteEncodedMetadataTest {
     @Test
     public void testDefaultConstructor() {
         final var byteEncodedMetadata = new ByteEncodedMetadata();
-        assertEquals(0, byteEncodedMetadata.getValue());
+        assertEquals(0, byteEncodedMetadata.getByteValue());
     }
 }

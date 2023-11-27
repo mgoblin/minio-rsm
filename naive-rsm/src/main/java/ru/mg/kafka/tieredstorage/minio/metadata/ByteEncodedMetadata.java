@@ -21,7 +21,28 @@ import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-// TODO Javadoc
+/**
+ * Encode segment index and data copy result as byte for storing in
+ * {@link  org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata.CustomMetadata}
+ * between copy and fetch/delete calls.
+ *
+ * <p>Each bit used as flag for store segment file copy to S3 status.
+ *
+ * <p>bit 1 - segment data
+ *
+ * <p>bit 2 - offset index
+ *
+ * <p>bit 3 - time index
+ *
+ * <p>bit 4 - transaction index
+ *
+ * <p>bit 5 - producer snapshot
+ *
+ * <p>bit 6 - leader-epoch checkpoint
+ *
+ * <p>Setting the bit to 1 means that copy was successful, otherwise data is not copied (absent in Kafla local
+ * filesystem or error on copy occurred)
+ */
 public final class ByteEncodedMetadata {
     private static final byte DATA_POSITION = 0;
     private static final byte OFFSET_INDEX_POSITION = 1;
@@ -34,10 +55,20 @@ public final class ByteEncodedMetadata {
 
     private byte value;
 
+    /**
+     * Create an encoder by byte value.
+     *
+     * <p>Bits 7 and 8 are always reset to zero
+     *
+     * @param value byte value
+     */
     public ByteEncodedMetadata(final byte value) {
         this.value = (byte) (value & ALL_TRUE_VALUE);
     }
 
+    /**
+     * Create an encoder with all bits set to zero.
+     */
     public ByteEncodedMetadata() {
         super();
         this.value = ALL_FALSE_VALUE;
@@ -97,10 +128,16 @@ public final class ByteEncodedMetadata {
         this.value = (byte) (leaderEpochIndexNotEmpty ? this.value | mask : this.value & ~mask);
     }
 
-    public byte getValue() {
+    public byte getByteValue() {
         return value;
     }
 
+    /**
+     * Get flag by index type
+     *
+     * @param indexType index type
+     * @return true if flag on, otherwise false
+     */
     public boolean isIndexOfTypePresent(final RemoteStorageManager.IndexType indexType) {
         return switch (indexType) {
             case OFFSET -> isIndexNotEmpty();
