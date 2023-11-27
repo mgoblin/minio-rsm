@@ -74,19 +74,19 @@ class NameAssignerTest {
     void testLogSegmentObjectNameAssign() {
         final NameAssigner names = new NameAssigner(remoteLogSegmentMetadata);
 
-        assertEquals("/tieredTopic-0/00000000000000001000.log", names.logSegmentObjectName());
+        assertEquals("/tieredTopic-0/00000000000000000000.log", names.logSegmentObjectName());
     }
 
     @Test void testIndexObjectNameAssign() {
         final NameAssigner names = new NameAssigner(remoteLogSegmentMetadata);
 
-        assertEquals("/tieredTopic-0/00000000000000001000.index", names.indexObjectName());
+        assertEquals("/tieredTopic-0/00000000000000000000.index", names.indexObjectName());
     }
 
     @Test void testTimeIndexObjectNameAssign() {
         final NameAssigner names = new NameAssigner(remoteLogSegmentMetadata);
 
-        assertEquals("/tieredTopic-0/00000000000000001000.timeindex", names.timeIndexObjectName());
+        assertEquals("/tieredTopic-0/00000000000000000000.timeindex", names.timeIndexObjectName());
     }
 
     @Test
@@ -94,18 +94,18 @@ class NameAssignerTest {
         final NameAssigner names = new NameAssigner(remoteLogSegmentMetadata);
 
         assertEquals(
-                "/tieredTopic-0/00000000000000001000.index",
+                "/tieredTopic-0/00000000000000000000.index",
                 names.indexNameByType(RemoteStorageManager.IndexType.OFFSET));
         assertEquals(
-                "/tieredTopic-0/00000000000000001000.timeindex",
+                "/tieredTopic-0/00000000000000000000.timeindex",
                 names.indexNameByType(RemoteStorageManager.IndexType.TIMESTAMP));
 
         assertEquals(
-                "/tieredTopic-0/00000000000000001000.txnindex",
+                "/tieredTopic-0/00000000000000000000.txnindex",
                 names.indexNameByType(RemoteStorageManager.IndexType.TRANSACTION));
 
         assertEquals(
-                "/tieredTopic-0/00000000000000001000.snapshot",
+                "/tieredTopic-0/00000000000000000000.snapshot",
                 names.indexNameByType(RemoteStorageManager.IndexType.PRODUCER_SNAPSHOT));
 
         assertEquals(
@@ -118,13 +118,13 @@ class NameAssignerTest {
     @Test
     public void testBaseName() {
         final NameAssigner names = new NameAssigner(remoteLogSegmentMetadata);
-        assertEquals("/tieredTopic-0/00000000000000001000", names.getBaseName());
+        assertEquals("/tieredTopic-0/00000000000000000000", names.getBaseName());
     }
 
     @Test
     public void testToString() {
         final NameAssigner names = new NameAssigner(remoteLogSegmentMetadata);
-        assertEquals("PutS3Names{logSegmentName='/tieredTopic-0/00000000000000001000'}", names.toString());
+        assertEquals("PutS3Names{logSegmentName='/tieredTopic-0/00000000000000000000'}", names.toString());
     }
 
     @Test

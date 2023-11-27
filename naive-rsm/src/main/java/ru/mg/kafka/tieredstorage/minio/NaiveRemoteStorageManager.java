@@ -48,6 +48,8 @@ import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
 
 // TODO add Javadoc
+// TODO Minio enhance exception handling
+// TODO integration tests
 // TODO Add README
 // TODO add minio client all params support
 public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.remote.storage.RemoteStorageManager {
@@ -117,12 +119,12 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
             final var isProducerSnapshotCopied = copyProducerSnapshotIndex(
                     logSegmentData.producerSnapshotIndex(),
-                    names.producerSnapshotIndexObjectName());
+                    names.producerSnapshotObjectName());
             copyMetadata.setProducerSnapshotIndexNotEmpty(isProducerSnapshotCopied);
 
             final var isLeaderEpochCopied = copyLeaderEpochIndex(
                     logSegmentData.leaderEpochIndex(),
-                    names.leaderEpochIndexObjectName());
+                    names.leaderEpochObjectName());
             copyMetadata.setLeaderEpochIndexNotEmpty(isLeaderEpochCopied);
 
             final byte[] metadataBitmap = new byte[]{copyMetadata.getValue()};
@@ -431,8 +433,8 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                 names.indexObjectName(),
                 names.timeIndexObjectName(),
                 names.transactionIndexObjectName(),
-                names.producerSnapshotIndexObjectName(),
-                names.leaderEpochIndexObjectName()
+                names.producerSnapshotObjectName(),
+                names.leaderEpochObjectName()
         );
 
         log.debug("Objects for delete from {} are {}", names.getBaseName(), segmentObjectNames);
