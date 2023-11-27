@@ -463,6 +463,10 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
     @Override
     public void close() {
+        if (initialized) {
+            minioClient = null;
+            initialized = false;
+        }
         log.debug("Remote storage manager closed");
     }
 
