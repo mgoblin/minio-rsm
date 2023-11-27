@@ -35,28 +35,52 @@ class ByteEncodedMetadataTest {
         byteEncodedMetadata.setDataNotEmpty(true);
         assertEquals(1, byteEncodedMetadata.getValue());
         assertTrue(byteEncodedMetadata.isDataNotEmpty());
+        byteEncodedMetadata.setDataNotEmpty(false);
+        assertEquals(0, byteEncodedMetadata.getValue());
+        assertFalse(byteEncodedMetadata.isDataNotEmpty());
+        byteEncodedMetadata.setDataNotEmpty(true);
 
         byteEncodedMetadata.setIndexNotEmpty(true);
         assertEquals(3, byteEncodedMetadata.getValue());
         assertTrue(byteEncodedMetadata.isIndexNotEmpty());
+        byteEncodedMetadata.setIndexNotEmpty(false);
+        assertEquals(1, byteEncodedMetadata.getValue());
+        assertFalse(byteEncodedMetadata.isIndexNotEmpty());
+        byteEncodedMetadata.setIndexNotEmpty(true);
 
         byteEncodedMetadata.setTimeIndexNotEmpty(true);
         assertEquals(7, byteEncodedMetadata.getValue());
         assertTrue(byteEncodedMetadata.isTimeIndexNotEmpty());
+        byteEncodedMetadata.setTimeIndexNotEmpty(false);
+        assertEquals(3, byteEncodedMetadata.getValue());
+        assertFalse(byteEncodedMetadata.isTimeIndexNotEmpty());
+        byteEncodedMetadata.setTimeIndexNotEmpty(true);
 
         byteEncodedMetadata.setTransactionIndexNotEmpty(true);
         assertEquals(15, byteEncodedMetadata.getValue());
         assertTrue(byteEncodedMetadata.isTransactionIndexNotEmpty());
+        byteEncodedMetadata.setTransactionIndexNotEmpty(false);
+        assertEquals(7, byteEncodedMetadata.getValue());
+        assertFalse(byteEncodedMetadata.isTransactionIndexNotEmpty());
+        byteEncodedMetadata.setTransactionIndexNotEmpty(true);
 
         byteEncodedMetadata.setProducerSnapshotIndexNotEmpty(true);
         assertEquals(31, byteEncodedMetadata.getValue());
         assertTrue(byteEncodedMetadata.isProducerSnapshotIndexNotEmpty());
+        byteEncodedMetadata.setProducerSnapshotIndexNotEmpty(false);
+        assertEquals(15, byteEncodedMetadata.getValue());
+        assertFalse(byteEncodedMetadata.isProducerSnapshotIndexNotEmpty());
+        byteEncodedMetadata.setProducerSnapshotIndexNotEmpty(true);
 
         byteEncodedMetadata.setLeaderEpochIndexNotEmpty(true);
         assertEquals(63, byteEncodedMetadata.getValue());
         assertTrue(byteEncodedMetadata.isLeaderEpochIndexNotEmpty());
+        byteEncodedMetadata.setLeaderEpochIndexNotEmpty(false);
+        assertEquals(31, byteEncodedMetadata.getValue());
+        assertFalse(byteEncodedMetadata.isLeaderEpochIndexNotEmpty());
+        byteEncodedMetadata.setLeaderEpochIndexNotEmpty(true);
 
-        final var max = new  ByteEncodedMetadata(Byte.MAX_VALUE);
+        final var max = new  ByteEncodedMetadata((byte) 0b11111111);
         assertEquals(63, max.getValue());
     }
 

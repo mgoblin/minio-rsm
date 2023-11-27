@@ -18,11 +18,10 @@ package ru.mg.kafka.tieredstorage.minio.metadata;
 
 import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
 
-import org.apache.commons.lang3.Conversion;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-// TODO use only bitwise operators and eliminate using boolean[] on conversions
+// TODO Javadoc
 public final class ByteEncodedMetadata {
     private static final byte DATA_POSITION = 0;
     private static final byte OFFSET_INDEX_POSITION = 1;
@@ -30,88 +29,72 @@ public final class ByteEncodedMetadata {
     private static final byte TNX_INDEX_POSITION = 3;
     private static final  byte PRODUCER_SNAPSHOT_POSITION = 4;
     private static final byte LEADER_EPOCH_INDEX_POSITION = 5;
-    private static final byte BITS_SIZE = 6;
+    public static final int ALL_TRUE_VALUE = 0b00111111;
+    public static final int ALL_FALSE_VALUE = 0;
 
     private byte value;
 
     public ByteEncodedMetadata(final byte value) {
-        this.value = value;
-        final boolean[] flags = asBooleanArray();
-        this.value = toValue(flags);
+        this.value = (byte) (value & ALL_TRUE_VALUE);
     }
 
     public ByteEncodedMetadata() {
         super();
-        this.value = 0;
-    }
-
-    private boolean[] asBooleanArray() {
-        final boolean[] result = new boolean[BITS_SIZE];
-        return Conversion.byteToBinary(value, 0, result, 0, BITS_SIZE);
-    }
-
-    private byte toValue(final boolean[] boolArray) {
-        return Conversion.binaryToByte(boolArray, 0, (byte) 0, 0,  BITS_SIZE);
+        this.value = ALL_FALSE_VALUE;
     }
 
     public boolean isDataNotEmpty() {
-        return asBooleanArray()[DATA_POSITION];
+        return (value & (1 << DATA_POSITION)) > 0;
     }
 
     public void setDataNotEmpty(final boolean dataNotEmpty) {
-        final boolean[] current = asBooleanArray();
-        current[DATA_POSITION] = dataNotEmpty;
-        this.value = toValue(current);
+        final byte mask = 1 << DATA_POSITION;
+        this.value = (byte) (dataNotEmpty ? this.value | mask : this.value & ~mask);
     }
 
     public boolean isIndexNotEmpty() {
-        return asBooleanArray()[OFFSET_INDEX_POSITION];
+        return (value & (1 << OFFSET_INDEX_POSITION)) > 0;
     }
 
     public void setIndexNotEmpty(final boolean indexNotEmpty) {
-        final boolean[] current = asBooleanArray();
-        current[OFFSET_INDEX_POSITION] = indexNotEmpty;
-        this.value = toValue(current);
+        final byte mask = 1 << OFFSET_INDEX_POSITION;
+        this.value = (byte) (indexNotEmpty ? this.value | mask : this.value & ~mask);
     }
 
     public boolean isTimeIndexNotEmpty() {
-        return asBooleanArray()[TIME_INDEX_POSITION];
+        return (value & (1 << TIME_INDEX_POSITION)) > 0;
     }
 
     public void setTimeIndexNotEmpty(final boolean timeIndexNotEmpty) {
-        final boolean[] current = asBooleanArray();
-        current[TIME_INDEX_POSITION] = timeIndexNotEmpty;
-        this.value = toValue(current);
+        final byte mask = 1 << TIME_INDEX_POSITION;
+        this.value = (byte) (timeIndexNotEmpty ? this.value | mask : this.value & ~mask);
     }
 
     public boolean isTransactionIndexNotEmpty() {
-        return asBooleanArray()[TNX_INDEX_POSITION];
+        return (value & (1 << TNX_INDEX_POSITION)) > 0;
     }
 
     public void setTransactionIndexNotEmpty(final boolean transactionIndexNotEmpty) {
-        final boolean[] current = asBooleanArray();
-        current[TNX_INDEX_POSITION] = transactionIndexNotEmpty;
-        this.value = toValue(current);
+        final byte mask = 1 << TNX_INDEX_POSITION;
+        this.value = (byte) (transactionIndexNotEmpty ? this.value | mask : this.value & ~mask);
     }
 
     public boolean isProducerSnapshotIndexNotEmpty() {
-        return asBooleanArray()[PRODUCER_SNAPSHOT_POSITION];
+        return (value & (1 << PRODUCER_SNAPSHOT_POSITION)) > 0;
     }
 
     public void setProducerSnapshotIndexNotEmpty(final boolean producerSnapshotIndexNotEmpty) {
-        final boolean[] current = asBooleanArray();
-        current[PRODUCER_SNAPSHOT_POSITION] = producerSnapshotIndexNotEmpty;
-        this.value = toValue(current);
+        final byte mask = 1 << PRODUCER_SNAPSHOT_POSITION;
+        this.value = (byte) (producerSnapshotIndexNotEmpty ? this.value | mask : this.value & ~mask);
     }
 
     public boolean isLeaderEpochIndexNotEmpty() {
-        return asBooleanArray()[LEADER_EPOCH_INDEX_POSITION];
+        return (value & (1 << LEADER_EPOCH_INDEX_POSITION)) > 0;
     }
 
     public void setLeaderEpochIndexNotEmpty(final boolean leaderEpochIndexNotEmpty) {
-        final boolean[] current = asBooleanArray();
-        current[LEADER_EPOCH_INDEX_POSITION] = leaderEpochIndexNotEmpty;
-        this.value = toValue(current);
+        final byte mask = 1 << LEADER_EPOCH_INDEX_POSITION;
+        this.value = (byte) (leaderEpochIndexNotEmpty ? this.value | mask : this.value & ~mask);
     }
 
     public byte getValue() {
