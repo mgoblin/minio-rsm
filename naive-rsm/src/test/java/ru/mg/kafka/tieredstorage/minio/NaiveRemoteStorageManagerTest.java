@@ -1186,10 +1186,10 @@ public class NaiveRemoteStorageManagerTest {
                     Map.of(1, 0L));
 
 
-            final var result = remoteStorageManager.fetchIndex(
-                    remoteLogSegmentMetadata,
-                    RemoteStorageManager.IndexType.LEADER_EPOCH);
-            assertNotNull(result);
+            assertThrows(RemoteStorageException.class,
+                    () -> remoteStorageManager.fetchIndex(
+                            remoteLogSegmentMetadata,
+                            RemoteStorageManager.IndexType.LEADER_EPOCH));
 
             verify(minioClientMock, times(0)).getObject(any(GetObjectArgs.class));
         }
@@ -1237,10 +1237,10 @@ public class NaiveRemoteStorageManagerTest {
                     RemoteLogSegmentState.COPY_SEGMENT_STARTED,
                     Map.of(1, 0L));
 
-            final var result = remoteStorageManager.fetchIndex(
-                    remoteLogSegmentMetadata,
-                    RemoteStorageManager.IndexType.LEADER_EPOCH);
-            assertNotNull(result);
+            assertThrows(RemoteStorageException.class,
+                    () -> remoteStorageManager.fetchIndex(
+                            remoteLogSegmentMetadata,
+                            RemoteStorageManager.IndexType.LEADER_EPOCH));
 
             verify(minioClientMock, times(0)).getObject(any(GetObjectArgs.class));
         }

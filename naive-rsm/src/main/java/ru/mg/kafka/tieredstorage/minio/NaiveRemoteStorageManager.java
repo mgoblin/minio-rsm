@@ -442,29 +442,57 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
         final NameAssigner nameAssigner = new NameAssigner(remoteLogSegmentMetadata);
         final String indexObjectName = nameAssigner.indexNameByType(indexType);
-        final byte metadataBitmap = remoteLogSegmentMetadata.customMetadata()
-                .orElse(new RemoteLogSegmentMetadata.CustomMetadata(new byte[]{0})).value()[0];
+        final var metadataBitmapOptional = remoteLogSegmentMetadata.customMetadata();
 
-        log.debug("Fetch index {} from {} with bitmap {} started", indexType, indexObjectName, metadataBitmap);
+        if (metadataBitmapOptional.isEmpty()) {
+            log.error("remoteLogSegmentMetadata.customMetadata is empty for index {} {}",
+                    indexObjectName, indexType.name());
+            throw new RemoteStorageException("remoteLogSegmentMetadata.customMetadata is empty");
+        } else {
+            final var metadataValue = remoteLogSegmentMetadata.customMetadata().get().value();
 
-        final ByteEncodedMetadata byteEncodedMetadata = new ByteEncodedMetadata(metadataBitmap);
-        final boolean isIndexPresent = byteEncodedMetadata.isIndexOfTypePresent(indexType);
+            if (metadataValue.length == 0) {
+                log.error("remoteLogSegmentMetadata.customMetadata is value length is 0 for index {} {}",
+                        indexObjectName, indexType.name());
+                throw new RemoteStorageException("remoteLogSegmentMetadata.customMetadata is value length is 0");
+            }
 
-        try {
-            return readIndex(isIndexPresent, indexObjectName, indexType);
-        } catch (MinioException | IOException | InvalidKeyException | NoSuchAlgorithmException e) {
-            log.error("Fetch index {} from {} failed.", indexType, indexObjectName, e);
-            throw new RemoteStorageException(e);
+            final var metadataBitmap = metadataValue[0];
+            log.debug("Fetch index {} from {} with bitmap {} started", indexType, indexObjectName, metadataBitmap);
+
+            final ByteEncodedMetadata byteEncodedMetadata = new ByteEncodedMetadata(metadataBitmap);
+            final boolean isIndexPresent = byteEncodedMetadata.isIndexOfTypePresent(indexType);
+
+            if (isIndexPresent) {
+                try {
+                    final InputStream inputStream = readIndex(indexObjectName, indexType);
+                    final var length = inputStream.available();
+                    log.debug("Fetch index {} with path {} success. Fetched {} bytes.",
+                            indexType,
+                            indexObjectName,
+                            length);
+
+                    return inputStream;
+                } catch (final IOException e) {
+                    throw new RemoteResourceNotFoundException(e);
+                }
+            } else {
+                if (indexType != IndexType.TRANSACTION) {
+                    log.error("Fetch index {} from {} failed. Metadata doesn't have index flag {}",
+                            indexType, indexObjectName, metadataBitmap);
+                    throw new RemoteStorageException("Metadata flag for index is false");
+                } else {
+                    log.debug("Fetch index {} from {} finished. Log not found", indexType, indexObjectName);
+                    throw new RemoteResourceNotFoundException("Transactional index is not found");
+                }
+            }
         }
     }
 
-    private InputStream readIndex(
-            final boolean isIndexPresent,
-            final String indexObjectName,
-            final IndexType indexType)
-            throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
+    private InputStream readIndex(final String indexObjectName, final IndexType indexType)
+            throws RemoteStorageException {
 
-        if (isIndexPresent) {
+        try {
             final var response = minioClient.getObject(
                     GetObjectArgs.builder()
                             .bucket(config.getMinioBucketName())
@@ -472,18 +500,10 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                             .build());
 
             final byte[] body = response.readAllBytes();
-
-            log.debug("Fetch index {} with path {} success. Fetched {} bytes.",
-                    indexType,
-                    indexObjectName,
-                    body.length);
-
             return new ByteArrayInputStream(body);
-        } else {
-            log.debug("Fetch index {} with path {} cancelled by custom metadata.",
-                    indexType,
-                    indexObjectName);
-            return InputStream.nullInputStream();
+        } catch (MinioException | IOException | InvalidKeyException | NoSuchAlgorithmException e) {
+            log.error("Fetch index {} from {} failed.", indexType, indexObjectName, e);
+            throw new RemoteStorageException(e);
         }
     }
 
