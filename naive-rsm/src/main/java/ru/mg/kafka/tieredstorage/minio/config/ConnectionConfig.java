@@ -48,6 +48,7 @@ import static io.minio.http.HttpUtils.validateUrl;
  *
  * @see ru.mg.kafka.tieredstorage.minio.NaiveRemoteStorageManager
  */
+// TODO add minio client all params support
 public class ConnectionConfig extends AbstractConfig {
     /**
      * Minio S3 endpoint URL config key name

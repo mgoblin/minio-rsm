@@ -47,11 +47,10 @@ import org.slf4j.LoggerFactory;
 import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
 
-// TODO add Javadoc
-// TODO Minio enhance exception handling
-// TODO integration tests
+// TODO Add Javadoc
+// TODO enhance Minio exception handling
+// TODO Add integration tests
 // TODO Add README
-// TODO add minio client all params support
 public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.remote.storage.RemoteStorageManager {
     private static final int MIN_PART_SIZE = 5 * 1024 * 1024; // 5 MiB
     private static final Logger log = LoggerFactory.getLogger(NaiveRemoteStorageManager.class);
