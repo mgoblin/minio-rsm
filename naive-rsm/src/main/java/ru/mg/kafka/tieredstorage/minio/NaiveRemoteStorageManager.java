@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -37,10 +38,12 @@ import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
 import io.minio.BucketExistsArgs;
 import io.minio.GetObjectArgs;
+import io.minio.ListObjectsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
+import io.minio.Result;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
 import io.minio.errors.InternalException;
@@ -48,6 +51,7 @@ import io.minio.errors.InvalidResponseException;
 import io.minio.errors.MinioException;
 import io.minio.errors.ServerException;
 import io.minio.errors.XmlParserException;
+import io.minio.messages.Item;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +60,7 @@ import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
 
 // TODO Add Javadoc
 // TODO enhance Minio exception handling
+// TODO Update unit tests
 // TODO Add integration tests
 // TODO Add README
 public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.remote.storage.RemoteStorageManager {
@@ -276,15 +281,8 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                     errorMessage,
                     e);
             throw new RemoteStorageException(e);
-        } catch (final InvalidResponseException e) {
-            log.error(
-                    "Minio S3 bucket {} operation on putObject {} failed. "
-                            + "Invalid response error.",
-                    bucketName,
-                    objectName,
-                    e);
-            throw new RemoteStorageException(e);
-        } catch (final NoSuchAlgorithmException | InvalidKeyException | XmlParserException | InternalException e) {
+        } catch (final NoSuchAlgorithmException | InvalidKeyException | XmlParserException
+                       | InternalException | InvalidResponseException e) {
             log.error(
                     "Minio S3 bucket {} operation on putObject {} failed. Internal minio error.",
                     bucketName,
@@ -426,10 +424,8 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                     errorMessage,
                     e);
             throw new RemoteStorageException(e);
-        } catch (final InvalidResponseException e) {
-            log.error("Fetch log segment data from object {} failed. Invalid response.", segmentObjectName, e);
-            throw new RemoteStorageException(e);
-        } catch (final NoSuchAlgorithmException | InvalidKeyException | XmlParserException | InternalException e) {
+        } catch (final NoSuchAlgorithmException | InvalidKeyException
+                       | XmlParserException | InternalException | InvalidResponseException e) {
             log.error("Fetch log segment data from object {} failed. Internal error occurred.", segmentObjectName, e);
             throw new RemoteStorageException(e);
         }
@@ -555,7 +551,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
         log.debug("Delete log files {} started", names.getBaseName());
 
-        final List<String> segmentObjectNames = List.of(
+        final Collection<String> segmentObjectNames = List.of(
                 names.logSegmentObjectName(),
                 names.indexObjectName(),
                 names.timeIndexObjectName(),
@@ -573,11 +569,47 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                             .bucket(getBucketName())
                             .object(dataObjectName)
                             .build());
-            } catch (MinioException | IOException | InvalidKeyException | NoSuchAlgorithmException e) {
-                log.error("Delete {} from {} error", dataObjectName, getBucketName());
+            } catch (final IOException | ServerException e) {
+                log.error("Delete {} from {} error. IO or server exception occurred.",
+                        dataObjectName,
+                        getBucketName(),
+                        e);
+                throw new RemoteStorageException(e);
+            } catch (final ErrorResponseException e) {
+                if (!objectExists(dataObjectName)) {
+                    break;
+                } else {
+                    final var errorCode = e.errorResponse().code();
+                    final var errorMessage = e.errorResponse().message();
+                    log.error(
+                            "Minio S3 bucket {} operation on putObject {} failed. "
+                                    + "Error response with code {} and message {}.",
+                            getBucketName(),
+                            dataObjectName,
+                            errorCode,
+                            errorMessage,
+                            e);
+                    throw new RemoteStorageException(e);
+                }
+            } catch (final NoSuchAlgorithmException | InvalidKeyException | InvalidResponseException
+                           | XmlParserException | InsufficientDataException | InternalException e) {
+                log.error("Delete {} from {} error. Internal server exception occurred.",
+                        dataObjectName,
+                        getBucketName(),
+                        e);
+                throw new RemoteStorageException(e);
             }
         }
         log.debug("Delete log files {} finished", names.getBaseName());
+    }
+
+    private boolean objectExists(final String dataObjectName) {
+        final Iterable<Result<Item>> list = minioClient.listObjects(
+                ListObjectsArgs.builder()
+                        .bucket(getBucketName())
+                        .prefix(dataObjectName)
+                        .build());
+        return list.iterator().hasNext();
     }
 
     @Override
