@@ -30,13 +30,55 @@ import org.apache.commons.validator.routines.UrlValidator;
 
 import static io.minio.http.HttpUtils.validateUrl;
 
+/**
+ * Minio config for Remote storage manager
+ *
+ * <p>Parse and validate Remote storage manager configs
+ *
+ * <p>Supported config keys are
+ * <ul>
+ *     <li>minio.url - not blank required. Minio S3 endpoint URL</li>
+ *     <li>minio.access.key  - Minio S3 access key. Non blank string, required. </li>
+ *     <li>minio.secret.key  - Minio S3 secret key. Non blank string, required. </li>
+ *     <li>minio.bucket.name - Minio bucket name. Non blank string, optional.
+ *        Default value is "kafka-tiered-storage-bucket"
+ *     </li>
+ *     <li>minio.auto.create.bucket - create bucket if not exists. boolean, optional, default true</li>
+ * </ul>
+ *
+ * @see ru.mg.kafka.tieredstorage.minio.NaiveRemoteStorageManager
+ */
 public class ConnectionConfig extends AbstractConfig {
+    /**
+     * Minio S3 endpoint URL config key name
+     */
     public static final String MINIO_S3_ENDPOINT_URL = "minio.url";
+
+    /**
+     * Minio access key config key name
+     */
     public static final String MINIO_ACCESS_KEY = "minio.access.key";
+
+    /**
+     * Minio secret key config key name
+     */
     public static final String MINIO_SECRET_KEY = "minio.secret.key";
+
+    /**
+     * Bucket config key name
+     */
     public static final String MINIO_BUCKET_NAME = "minio.bucket.name";
+
+    /**
+     * Default bucket name
+     */
     public static final String MINIO_BUCKET_NAME_DEFAULT_VALUE = "kafka-tiered-storage-bucket";
+
+    /**
+     * Auto create bucket config key name
+     */
     public static final String MINIO_AUTO_CREATE_BUCKET = "minio.auto.create.bucket";
+
     private static final String MINIO_S3_ENDPOINT_URL_DOC = "Minio S3 endpoint URL";
     private static final String MINIO_ACCESS_KEY_DOC = "Minio S3 endpoint access key";
     private static final String MINIO_SECRET_KEY_DOC = "Minio S3 endpoint secret key";
@@ -92,6 +134,11 @@ public class ConnectionConfig extends AbstractConfig {
         );
     }
 
+    /**
+     * Create and validate the configs
+     *
+     * @param props key-value properties map
+     */
     public ConnectionConfig(final Map<String, ?> props) {
         super(CONFIG, props);
         validate();
