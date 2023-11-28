@@ -54,8 +54,6 @@ import org.slf4j.LoggerFactory;
 import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
 
-import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
-
 // TODO Add Javadoc
 // TODO enhance Minio exception handling
 // TODO Add integration tests
@@ -417,14 +415,17 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
             log.error("Fetch log segment data from object {} failed. Insufficient data.", segmentObjectName, e);
             throw new RemoteStorageException(e);
         } catch (final ErrorResponseException e) {
-            final int httpCode = e.response().code();
-            if (httpCode == HTTP_NOT_FOUND) {
-                log.error("Fetch log segment data from object {} failed. Data not found.", segmentObjectName, e);
-                throw new RemoteResourceNotFoundException(e);
-            } else {
-                log.error("Fetch log segment data from object {} failed. Error response.", segmentObjectName, e);
-                throw new RemoteStorageException(e);
-            }
+            final var errorCode = e.errorResponse().code();
+            final var errorMessage = e.errorResponse().message();
+            log.error(
+                    "Minio S3 bucket {} operation on getObject {} failed. "
+                            + "Error response with code {} and message {}.",
+                    getBucketName(),
+                    segmentObjectName,
+                    errorCode,
+                    errorMessage,
+                    e);
+            throw new RemoteStorageException(e);
         } catch (final InvalidResponseException e) {
             log.error("Fetch log segment data from object {} failed. Invalid response.", segmentObjectName, e);
             throw new RemoteStorageException(e);
@@ -501,8 +502,43 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
             final byte[] body = response.readAllBytes();
             return new ByteArrayInputStream(body);
-        } catch (MinioException | IOException | InvalidKeyException | NoSuchAlgorithmException e) {
-            log.error("Fetch index {} from {} failed.", indexType, indexObjectName, e);
+        } catch (final IOException e) {
+            log.error("Fetch index {} from {} failed. IO exception occurred.", indexType, indexObjectName, e);
+            throw new RemoteStorageException(e);
+        } catch (final ServerException e) {
+            log.error("Minio S3 bucket {} server operation on get {} failed with http code {}.",
+                    getBucketName(),
+                    indexObjectName,
+                    e.statusCode(),
+                    e);
+            throw new RemoteStorageException(e);
+        } catch (final InsufficientDataException e) {
+            log.error(
+                    "Minio S3 bucket {} operation on putObject {} failed. "
+                            + "Not enough data available in InputStream.",
+                    getBucketName(),
+                    indexObjectName,
+                    e);
+            throw new RemoteStorageException(e);
+        } catch (final ErrorResponseException e) {
+            final var errorCode = e.errorResponse().code();
+            final var errorMessage = e.errorResponse().message();
+            log.error(
+                    "Minio S3 bucket {} operation on getObject {} failed. "
+                            + "Error response with code {} and message {}.",
+                    getBucketName(),
+                    indexObjectName,
+                    errorCode,
+                    errorMessage,
+                    e);
+            throw new RemoteStorageException(e);
+        } catch (final NoSuchAlgorithmException | InvalidKeyException | InvalidResponseException
+                       | XmlParserException | InternalException e) {
+            log.error(
+                    "Minio S3 bucket {} operation on getObject {} failed. Internal minio error.",
+                    getBucketName(),
+                    indexObjectName,
+                    e);
             throw new RemoteStorageException(e);
         }
     }
