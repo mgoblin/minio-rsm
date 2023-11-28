@@ -612,7 +612,7 @@ public class NaiveRemoteStorageManagerTest {
     }
 
     @Test
-    public void testFetchSegmentOnMinioException() throws Exception {
+    public void testFetchSegmentOnIOException() throws Exception {
         final var minioClientMock = mock(io.minio.MinioClient.class);
         Assertions.assertNotNull(minioClientMock);
 
@@ -626,7 +626,7 @@ public class NaiveRemoteStorageManagerTest {
 
             when(minioClientMock.getObject(any(GetObjectArgs.class)))
                     .thenAnswer(invocation -> {
-                        throw new MinioException();
+                        throw new IOException();
                     });
 
             final String topicName = "tieredTopic";

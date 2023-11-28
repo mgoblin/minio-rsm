@@ -32,6 +32,7 @@ import java.util.Optional;
 import org.apache.kafka.common.utils.ByteBufferInputStream;
 import org.apache.kafka.server.log.remote.storage.LogSegmentData;
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
+import org.apache.kafka.server.log.remote.storage.RemoteResourceNotFoundException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
 import io.minio.BucketExistsArgs;
@@ -52,6 +53,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
+
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 
 // TODO Add Javadoc
 // TODO enhance Minio exception handling
@@ -328,7 +331,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
             log.error("Fetch log segment data start position {} with path {} is cancelled.",
                     startPosition,
                     segmentObjectName);
-            throw new RemoteStorageException(String.format(
+            throw new RemoteResourceNotFoundException(String.format(
                     "Fetch segment %s with wrong metadata %s",
                     segmentObjectName,
                     metadataBitmap));
@@ -404,8 +407,29 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
             return body;
 
-        } catch (MinioException | IOException | InvalidKeyException | NoSuchAlgorithmException e) {
-            log.error("Fetch log segment data from path {} failed.", segmentObjectName, e);
+        } catch (final IOException e) {
+            log.error("Fetch log segment data from object {} failed. IO exception occurred.", segmentObjectName, e);
+            throw new RemoteStorageException(e);
+        } catch (final ServerException e) {
+            log.error("Fetch log segment data from object {} failed. Http server error.", segmentObjectName, e);
+            throw new RemoteStorageException(e);
+        } catch (final InsufficientDataException e) {
+            log.error("Fetch log segment data from object {} failed. Insufficient data.", segmentObjectName, e);
+            throw new RemoteStorageException(e);
+        } catch (final ErrorResponseException e) {
+            final int httpCode = e.response().code();
+            if (httpCode == HTTP_NOT_FOUND) {
+                log.error("Fetch log segment data from object {} failed. Data not found.", segmentObjectName, e);
+                throw new RemoteResourceNotFoundException(e);
+            } else {
+                log.error("Fetch log segment data from object {} failed. Error response.", segmentObjectName, e);
+                throw new RemoteStorageException(e);
+            }
+        } catch (final InvalidResponseException e) {
+            log.error("Fetch log segment data from object {} failed. Invalid response.", segmentObjectName, e);
+            throw new RemoteStorageException(e);
+        } catch (final NoSuchAlgorithmException | InvalidKeyException | XmlParserException | InternalException e) {
+            log.error("Fetch log segment data from object {} failed. Internal error occurred.", segmentObjectName, e);
             throw new RemoteStorageException(e);
         }
     }
