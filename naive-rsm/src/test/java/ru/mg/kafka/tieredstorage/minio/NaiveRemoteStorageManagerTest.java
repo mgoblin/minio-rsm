@@ -372,7 +372,7 @@ public class NaiveRemoteStorageManagerTest {
             assertTrue(customMetadataActual.isPresent());
             final var copyMetadataActual = new ByteEncodedMetadata(customMetadataActual.get().value()[0]);
 
-            assertEquals(copyMetadataExpected, copyMetadataActual);
+            assertEquals(copyMetadataExpected.getByteValue(), copyMetadataActual.getByteValue());
 
             verify(minioClientMock, times(5)).putObject(any(io.minio.PutObjectArgs.class));
         }

@@ -40,7 +40,13 @@ import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
+import io.minio.errors.ErrorResponseException;
+import io.minio.errors.InsufficientDataException;
+import io.minio.errors.InternalException;
+import io.minio.errors.InvalidResponseException;
 import io.minio.errors.MinioException;
+import io.minio.errors.ServerException;
+import io.minio.errors.XmlParserException;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,56 +103,53 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
         ensureInitialized();
 
-        try {
-            final var names = new NameAssigner(remoteLogSegmentMetadata);
-            final var copyMetadata = new ByteEncodedMetadata();
+        final var names = new NameAssigner(remoteLogSegmentMetadata);
+        final var copyMetadata = new ByteEncodedMetadata();
 
 
-            final var isDataCopied = copySegmentData(logSegmentData.logSegment(), names.logSegmentObjectName());
-            copyMetadata.setDataNotEmpty(isDataCopied);
+        final var isDataCopied = copySegmentData(logSegmentData.logSegment(), names.logSegmentObjectName());
+        copyMetadata.setDataNotEmpty(isDataCopied);
 
-            final var isOffsetIndexCopied = copyOffsetIndex(logSegmentData.offsetIndex(), names.indexObjectName());
-            copyMetadata.setIndexNotEmpty(isOffsetIndexCopied);
+        final var isOffsetIndexCopied = copyOffsetIndex(logSegmentData.offsetIndex(), names.indexObjectName());
+        copyMetadata.setIndexNotEmpty(isOffsetIndexCopied);
 
-            final var isTimeIndexCopied = copyTimeIndex(logSegmentData.timeIndex(), names.timeIndexObjectName());
-            copyMetadata.setTimeIndexNotEmpty(isTimeIndexCopied);
+        final var isTimeIndexCopied = copyTimeIndex(logSegmentData.timeIndex(), names.timeIndexObjectName());
+        copyMetadata.setTimeIndexNotEmpty(isTimeIndexCopied);
 
+        if (logSegmentData.transactionIndex().isPresent()) {
             final var isTxnIndexCopied = copyTransactionalIndex(
-                    logSegmentData.transactionIndex(),
+                    logSegmentData.transactionIndex().get(),
                     names.transactionIndexObjectName());
             copyMetadata.setTransactionIndexNotEmpty(isTxnIndexCopied);
-
-            final var isProducerSnapshotCopied = copyProducerSnapshotIndex(
-                    logSegmentData.producerSnapshotIndex(),
-                    names.producerSnapshotObjectName());
-            copyMetadata.setProducerSnapshotIndexNotEmpty(isProducerSnapshotCopied);
-
-            final var isLeaderEpochCopied = copyLeaderEpochIndex(
-                    logSegmentData.leaderEpochIndex(),
-                    names.leaderEpochObjectName());
-            copyMetadata.setLeaderEpochIndexNotEmpty(isLeaderEpochCopied);
-
-            final byte[] metadataBitmap = new byte[]{copyMetadata.getByteValue()};
-            log.trace("Metadata bitmap is {} for {}", metadataBitmap, names.getBaseName());
-
-            final var customMetadata = new RemoteLogSegmentMetadata.CustomMetadata(metadataBitmap);
-
-            log.trace("Copy log segment data with metadata {} and segment data {} finished",
-                    remoteLogSegmentMetadata,
-                    logSegmentData);
-
-            return Optional.of(customMetadata);
-        } catch (MinioException | InvalidKeyException | IOException | NoSuchAlgorithmException e) {
-            log.error("Copy log segment data with metadata {} and segment data {} failed.",
-                    remoteLogSegmentMetadata,
-                    logSegmentData,
-                    e);
-            throw new RemoteStorageException(e);
+        } else {
+            copyMetadata.setTransactionIndexNotEmpty(false);
+            log.debug("Transactional index is empty, don't copy it");
         }
+
+        final var isProducerSnapshotCopied = copyProducerSnapshotIndex(
+                logSegmentData.producerSnapshotIndex(),
+                names.producerSnapshotObjectName());
+        copyMetadata.setProducerSnapshotIndexNotEmpty(isProducerSnapshotCopied);
+
+        final var isLeaderEpochCopied = copyLeaderEpochIndex(
+                logSegmentData.leaderEpochIndex(),
+                names.leaderEpochObjectName());
+        copyMetadata.setLeaderEpochIndexNotEmpty(isLeaderEpochCopied);
+
+        final byte[] metadataBitmap = new byte[]{copyMetadata.getByteValue()};
+        log.trace("Metadata bitmap is {} for {}", metadataBitmap, names.getBaseName());
+
+        final var customMetadata = new RemoteLogSegmentMetadata.CustomMetadata(metadataBitmap);
+
+        log.trace("Copy log segment data with metadata {} and segment data {} finished",
+                remoteLogSegmentMetadata,
+                logSegmentData);
+
+        return Optional.of(customMetadata);
     }
 
     private boolean copySegmentData(final Path srcPath, final String dstObjectName)
-            throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
+            throws RemoteStorageException {
         writeFileByPathToMinio(
                 srcPath,
                 config.getMinioBucketName(),
@@ -156,7 +159,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
     }
 
     private boolean copyOffsetIndex(final Path srcPath, final String dstObjectName)
-            throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
+            throws RemoteStorageException {
         writeFileByPathToMinio(
                 srcPath,
                 config.getMinioBucketName(),
@@ -166,7 +169,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
     }
 
     private boolean copyTimeIndex(final Path srcPath, final String dstObjectName)
-            throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
+            throws RemoteStorageException {
         writeFileByPathToMinio(
                 srcPath,
                 config.getMinioBucketName(),
@@ -175,23 +178,18 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         return true;
     }
 
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private boolean copyTransactionalIndex(final Optional<Path> maybeSrcPath, final String dstObjectName)
-            throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
-        if (maybeSrcPath.isPresent()) {
-            writeFileByPathToMinio(
-                    maybeSrcPath.get(),
-                    config.getMinioBucketName(),
-                    dstObjectName,
-                    "transactional index");
-        } else {
-            log.debug("Transactional index is empty, dont write it");
-        }
-        return maybeSrcPath.isPresent();
+    private boolean copyTransactionalIndex(final Path srcPath, final String dstObjectName)
+            throws RemoteStorageException {
+        writeFileByPathToMinio(
+                srcPath,
+                config.getMinioBucketName(),
+                dstObjectName,
+                "transactional index");
+        return true;
     }
 
     private boolean copyProducerSnapshotIndex(final Path srcPath, final String dstObjectName)
-            throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
+            throws RemoteStorageException {
         writeFileByPathToMinio(
                 srcPath,
                 config.getMinioBucketName(),
@@ -201,7 +199,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
     }
 
     private boolean copyLeaderEpochIndex(final ByteBuffer data,  final String dstObjectName)
-            throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
+            throws RemoteStorageException {
         writeByteBufferToMinio(
                 data,
                 config.getMinioBucketName(),
@@ -210,25 +208,30 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         return true;
     }
 
-    private void writeFileByPathToMinio(final Path srcPath,
-                                                       final String bucketName,
-                                                       final String objectName,
-                                                       final String entityName
-    ) throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
+    private void writeFileByPathToMinio(
+            final Path srcPath,
+            final String bucketName,
+            final String objectName,
+            final String entityName
+    ) throws RemoteStorageException {
 
         final var localFilePath = srcPath.normalize().toAbsolutePath();
 
-        final var bytes = FileUtils.readFileToByteArray(localFilePath.toFile());
-        final ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-
-        writeByteBufferToMinio(byteBuffer, bucketName, objectName, entityName);
+        try {
+            final var  bytes = FileUtils.readFileToByteArray(localFilePath.toFile());
+            final ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+            writeByteBufferToMinio(byteBuffer, bucketName, objectName, entityName);
+        } catch (final IOException e) {
+            log.error("Access to file {} IO error", localFilePath, e);
+            throw new RemoteStorageException(e);
+        }
     }
 
     private void writeByteBufferToMinio(final ByteBuffer buffer,
                                                  final String bucketName,
                                                  final String objectName,
                                                  final String entityName
-    ) throws MinioException, IOException, InvalidKeyException, NoSuchAlgorithmException {
+    ) throws RemoteStorageException {
 
         try (final var logSegmentInputStream = new ByteBufferInputStream(buffer)) {
             minioClient.putObject(
@@ -242,6 +245,51 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                             .build()
             );
             log.debug("Copy {} to bucket {} with name {}", entityName, bucketName, objectName);
+        } catch (final IOException e) {
+            log.error("Minio S3 bucket {} IO operation on putObject {} failed.", bucketName, objectName, e);
+            throw new RemoteStorageException(e);
+        } catch (final ServerException e) {
+            log.error("Minio S3 bucket {} server operation on putObject {} failed with http code {}.",
+                    bucketName,
+                    objectName,
+                    e.statusCode(),
+                    e);
+            throw new RemoteStorageException(e);
+        } catch (final InsufficientDataException e) {
+            log.error(
+                    "Minio S3 bucket {} operation on putObject {} failed. "
+                    + "Not enough data available in InputStream.",
+                    bucketName,
+                    objectName,
+                    e);
+            throw new RemoteStorageException(e);
+        } catch (final ErrorResponseException e) {
+            final var errorCode = e.errorResponse().code();
+            final var errorMessage = e.errorResponse().message();
+            log.error(
+                    "Minio S3 bucket {} operation on putObject {} failed. "
+                            + "Error response with code {} and message {}.",
+                    bucketName,
+                    objectName,
+                    errorCode,
+                    errorMessage,
+                    e);
+            throw new RemoteStorageException(e);
+        } catch (final InvalidResponseException e) {
+            log.error(
+                    "Minio S3 bucket {} operation on putObject {} failed. "
+                            + "Invalid response error.",
+                    bucketName,
+                    objectName,
+                    e);
+            throw new RemoteStorageException(e);
+        } catch (final NoSuchAlgorithmException | InvalidKeyException | XmlParserException | InternalException e) {
+            log.error(
+                    "Minio S3 bucket {} operation on putObject {} failed. Internal minio error.",
+                    bucketName,
+                    objectName,
+                    e);
+            throw new RemoteStorageException(e);
         }
     }
 
