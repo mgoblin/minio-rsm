@@ -62,10 +62,10 @@ import org.slf4j.LoggerFactory;
 
 
 // TODO Add Javadoc
-// TODO Update unit tests
-// TODO Analyze CustomMetadata in deleteLogSegmentData
+// TODO Update unit tests - add fixtures
+// TODO Update unit tests - add parametric tests for exception cases
 // TODO Add integration tests
-// TODO Add README
+// TODO Analyze CustomMetadata in deleteLogSegmentData
 public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.remote.storage.RemoteStorageManager {
     private static final int MIN_PART_SIZE = 5 * 1024 * 1024; // 5 MiB
     private static final Logger log = LoggerFactory.getLogger(NaiveRemoteStorageManager.class);
