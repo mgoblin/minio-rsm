@@ -35,13 +35,15 @@ import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
 
 import io.minio.GetObjectArgs;
 import io.minio.GetObjectResponse;
-import io.minio.errors.MinioException;
+
+import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
+
 import okhttp3.Headers;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -165,7 +167,7 @@ public class NaiveRemoteStorageManagerTest {
 
         when(minioClientMock.bucketExists(any()))
                 .thenAnswer(invocation -> {
-                    throw new MinioException();
+                    throw new IOException();
                 });
 
         try (final var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {

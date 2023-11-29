@@ -19,14 +19,15 @@ package ru.mg.kafka.tieredstorage.minio.config;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.commons.lang3.Validate;
+import org.apache.commons.validator.routines.UrlValidator;
+
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.config.types.Password;
 
 import okhttp3.HttpUrl;
-import org.apache.commons.lang3.Validate;
-import org.apache.commons.validator.routines.UrlValidator;
 
 import static io.minio.http.HttpUtils.validateUrl;
 

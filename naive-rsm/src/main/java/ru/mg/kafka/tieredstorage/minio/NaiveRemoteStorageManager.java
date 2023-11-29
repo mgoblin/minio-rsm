@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import org.apache.commons.io.FileUtils;
+
 import org.apache.kafka.common.utils.ByteBufferInputStream;
 import org.apache.kafka.server.log.remote.storage.LogSegmentData;
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
@@ -48,19 +50,20 @@ import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
 import io.minio.errors.InternalException;
 import io.minio.errors.InvalidResponseException;
-import io.minio.errors.MinioException;
 import io.minio.errors.ServerException;
 import io.minio.errors.XmlParserException;
 import io.minio.messages.Item;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 // TODO Add Javadoc
-// TODO enhance Minio exception handling
 // TODO Update unit tests
+// TODO Analyze CustomMetadata in deleteLogSegmentData
 // TODO Add integration tests
 // TODO Add README
 public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.remote.storage.RemoteStorageManager {
@@ -649,16 +652,25 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                     NaiveRemoteStorageManager.class.getName(),
                     config.toString());
 
-        } catch (MinioException | InvalidKeyException | IOException | NoSuchAlgorithmException e) {
+        } catch (final IOException | ServerException | InternalException
+                       | InsufficientDataException | ErrorResponseException e) {
             initialized = false;
-            log.error("RemoteStorageManager configuration failed", e);
+            log.error("RemoteStorageManager configuration failed. recoverable error occurred.", e);
+        } catch (final NoSuchAlgorithmException | InvalidKeyException | InvalidResponseException
+                       | XmlParserException e) {
+            log.error("Unrecoverable initialization error", e);
+            initialized = false;
+            throw new RuntimeException(e);
         }
     }
 
     private boolean makeBucketIfNotExists(
             final String bucketName,
             final boolean autoCreateBucketConfigured
-    ) throws MinioException, InvalidKeyException, NoSuchAlgorithmException, IOException {
+    ) throws InvalidKeyException, NoSuchAlgorithmException, IOException, ServerException,
+            InsufficientDataException, ErrorResponseException, InvalidResponseException,
+            XmlParserException, InternalException {
+
         if (autoCreateBucketConfigured) {
             final boolean isBucketExists = minioClient.bucketExists(
                     BucketExistsArgs.builder().bucket(bucketName).build());

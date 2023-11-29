@@ -16,10 +16,10 @@
 
 package ru.mg.kafka.tieredstorage.minio.metadata;
 
-import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
-
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+
+import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
 
 /**
  * Encode segment index and data copy result as byte for storing in

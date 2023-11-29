@@ -18,10 +18,10 @@ package ru.mg.kafka.tieredstorage.minio;
 
 import java.util.Objects;
 
+import org.apache.commons.lang3.Validate;
+
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
-
-import org.apache.commons.lang3.Validate;
 
 /**
  * Assign names to S3 objects based on log segment data file and indexes file names.
