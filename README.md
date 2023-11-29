@@ -12,6 +12,7 @@ The project follows the API specifications according to the latest version of
 This implementation was done with few additional requirements:
 * Support for Minio only, preferably on-premise setup 
 * Code structure should be as simple as possible with minimal abstractions and dependencies
+* Support latest LTS JDK (JDK 21)
 
 ### Design details
 
