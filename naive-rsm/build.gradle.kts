@@ -13,7 +13,7 @@ val minioSdkVersion by extra { "8.5.7" }
 val apacheCommonsLangVersion by extra { "3.13.0" }
 val apacheCommonsValidatorVersion by extra { "1.7" }
 val apacheCommonsIOVersion by extra { "2.15.0" }
-val kafkaVersion by extra { "3.6.0" }
+val kafkaVersion by extra { "3.7.0" }
 val slf4jVersion by extra { "1.7.36" }
 val junitVersion by extra { "5.10.0" }
 val junitPlatformVersion by extra { "1.10.0" }
