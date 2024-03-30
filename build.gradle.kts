@@ -34,35 +34,23 @@ subprojects {
         mavenCentral()
     }
 
-//    java.sourceCompatibility = JavaVersion.VERSION_21
-//    java.targetCompatibility = JavaVersion.VERSION_21
-
     configure<CheckstyleExtension> {
         toolVersion = "10.12.0"
         configDirectory = rootProject.file("checkstyle/")
     }
 
-//    val integrationTest = sourceSets.create("integrationTest")
-//    integrationTest.compileClasspath += sourceSets.main.get().output + configurations.testRuntimeClasspath.get()
-//    integrationTest.runtimeClasspath += integrationTest.output + integrationTest.compileClasspath
-//
-//    sourceSets {
-//        integrationTest.java {
-//            srcDirs("src/integration-test/java")
-//        }
-//        integrationTest.resources {
-//            srcDirs("src/integration-test/resources")
-//        }
-//    }
-//
-//    }
-//
-//    configure<IdeaModel> {
-//        module {
-//            testSources.plus(integrationTest.java.srcDirs)
-//            testSources.plus(integrationTest.resources.srcDirs)
-//        }
-//    }
+    val integrationTest = sourceSets.create("integrationTest")
+    integrationTest.compileClasspath += sourceSets.main.get().output + configurations.testRuntimeClasspath.get()
+    integrationTest.runtimeClasspath += integrationTest.output + integrationTest.compileClasspath
+
+    sourceSets {
+        integrationTest.java {
+            srcDirs("src/integration-test/java")
+        }
+        integrationTest.resources {
+            srcDirs("src/integration-test/resources")
+        }
+    }
 
     tasks {
         withType<JavaCompile> {
