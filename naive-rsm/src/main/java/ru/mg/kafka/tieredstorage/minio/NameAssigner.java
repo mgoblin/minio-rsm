@@ -146,7 +146,7 @@ public class NameAssigner {
             case PRODUCER_SNAPSHOT -> producerSnapshotObjectName();
             case TRANSACTION -> transactionIndexObjectName();
             case LEADER_EPOCH -> leaderEpochObjectName();
-            case null, default -> throw new IllegalArgumentException("Index type should be not null");
+            case null -> throw new IllegalArgumentException("Index type should be not null");
         };
     }
 
