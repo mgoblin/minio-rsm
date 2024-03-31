@@ -18,8 +18,8 @@ package ru.mg.kafka.tieredstorage.minio.metadata;
 
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
 
-public class MetadataUtils {
-    public static ByteEncodedMetadata metadata(
+public interface MetadataUtils {
+    static ByteEncodedMetadata metadata(
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata) {
         final byte metadataBitmap = remoteLogSegmentMetadata.customMetadata()
                 .orElse(new RemoteLogSegmentMetadata.CustomMetadata(new byte[]{0})).value()[0];
@@ -27,7 +27,7 @@ public class MetadataUtils {
         return new ByteEncodedMetadata(metadataBitmap);
     }
 
-    public static RemoteLogSegmentMetadata.CustomMetadata customMetadata(final byte value) {
+    static RemoteLogSegmentMetadata.CustomMetadata customMetadata(final byte value) {
         final byte[] metadataBitmap = new byte[]{value};
         return new RemoteLogSegmentMetadata.CustomMetadata(metadataBitmap);
 

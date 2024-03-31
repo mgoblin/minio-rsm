@@ -16,7 +16,6 @@
 
 package ru.mg.kafka.tieredstorage.minio;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
@@ -197,19 +196,8 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         final String indexObjectName = nameAssigner.indexNameByType(indexType);
 
         if (MetadataUtils.metadata(remoteLogSegmentMetadata).isIndexNotEmpty()) {
-            try {
-                ensureInitialized();
-                final InputStream inputStream = ioFetcher.readIndex(indexObjectName, indexType);
-                final var length = inputStream.available();
-                log.debug("Fetch index {} with path {} success. Fetched {} bytes.",
-                        indexType,
-                        indexObjectName,
-                        length);
-
-                return inputStream;
-            } catch (final IOException e) {
-                throw new RemoteResourceNotFoundException(e);
-            }
+            ensureInitialized();
+            return ioFetcher.readIndex(indexObjectName, indexType);
         } else {
             if (indexType != IndexType.TRANSACTION) {
                 log.error("Fetch index {} from {} failed. Metadata doesn't have index flag {}",
