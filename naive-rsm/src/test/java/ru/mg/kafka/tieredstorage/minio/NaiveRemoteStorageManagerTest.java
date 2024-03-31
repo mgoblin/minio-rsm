@@ -33,14 +33,12 @@ import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentState;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
 
-import io.minio.GetObjectArgs;
-import io.minio.GetObjectResponse;
-
+import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
+import ru.mg.kafka.tieredstorage.minio.io.Fetcher;
+import ru.mg.kafka.tieredstorage.minio.io.RecoverableConfigurationFailException;
+import ru.mg.kafka.tieredstorage.minio.io.Writer;
 import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
 
-import okhttp3.Headers;
-
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -48,10 +46,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -62,23 +63,26 @@ public class NaiveRemoteStorageManagerTest {
     @Test
     public void testCreateBucketIfNotExistsAndAutoCreateBucketIsTrue() throws Exception {
 
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        when(minioClientMock.bucketExists(any()))
-                .thenReturn(false);
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key"
+        );
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key"
-            ));
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        doNothing().when(ioWriterMock).makeBucketIfNotExists();
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(
+                ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             assertTrue(remoteStorageManager.isInitialized());
 
-            verify(minioClientMock, times(1)).bucketExists(any());
-            verify(minioClientMock, times(1)).makeBucket(any());
+            verify(ioWriterMock, times(1)).makeBucketIfNotExists();
         }
 
     }
@@ -86,23 +90,24 @@ public class NaiveRemoteStorageManagerTest {
     @Test
     public void testNotCreateBucketIfItExistsAndAutoCreateBucketIsTrue() throws Exception {
 
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        when(minioClientMock.bucketExists(any()))
-                .thenReturn(true);
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key"
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key"
-            ));
+        doNothing().when(ioWriterMock).makeBucketIfNotExists();
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             assertTrue(remoteStorageManager.isInitialized());
 
-            verify(minioClientMock, times(1)).bucketExists(any());
-            verify(minioClientMock, times(0)).makeBucket(any());
+            verify(ioWriterMock, times(1)).makeBucketIfNotExists();
         }
 
     }
@@ -110,21 +115,23 @@ public class NaiveRemoteStorageManagerTest {
     @Test
     public void testNotCreateBucketIfItExistsAndAutoCreateBucketIsFalse() throws Exception {
 
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             assertTrue(remoteStorageManager.isInitialized());
 
-            verify(minioClientMock, times(0)).bucketExists(any());
-            verify(minioClientMock, times(0)).makeBucket(any());
+            verify(ioWriterMock, times(1)).makeBucketIfNotExists();
         }
 
     }
@@ -132,21 +139,23 @@ public class NaiveRemoteStorageManagerTest {
     @Test
     public void testCreateBucketIfNotExistsAndAutoCreateBucketIsFalse() throws Exception {
 
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             assertTrue(remoteStorageManager.isInitialized());
 
-            verify(minioClientMock, times(0)).bucketExists(any());
-            verify(minioClientMock, times(0)).makeBucket(any());
+            verify(ioWriterMock, times(1)).makeBucketIfNotExists();
         }
 
     }
@@ -155,46 +164,46 @@ public class NaiveRemoteStorageManagerTest {
     public void testNotInitializedAfterConstructor() {
         try (var manager = new NaiveRemoteStorageManager()) {
             assertFalse(manager.isInitialized());
-            assertThrows(IllegalArgumentException.class, manager::getBucketName);
         }
     }
 
     @Test
     public void testMinioExceptionOnConfig() throws Exception {
 
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        when(minioClientMock.bucketExists(any()))
-                .thenAnswer(invocation -> {
-                    throw new IOException();
-                });
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key"
+        );
 
-        try (final var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key"
-            ));
+        doThrow(new RecoverableConfigurationFailException(new IOException()))
+                .when(ioWriterMock).makeBucketIfNotExists();
 
+        try (final var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
             assertFalse(remoteStorageManager.isInitialized());
         }
 
-        verify(minioClientMock, times(1)).bucketExists(any());
     }
 
     @Test
     public void testUninitializedAfterClose() {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             assertTrue(remoteStorageManager.isInitialized());
 
@@ -205,25 +214,26 @@ public class NaiveRemoteStorageManagerTest {
 
     @Test
     public void testCopyLogSegmentData() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
 
-            when(minioClientMock.putObject(any(io.minio.PutObjectArgs.class)))
-                    .thenReturn(new io.minio.ObjectWriteResponse(
-                            okhttp3.Headers.of(),
-                            remoteStorageManager.getBucketName(),
-                            "",
-                            "",
-                            "",
-                            ""));
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
+
+            when(ioWriterMock.copySegmentData(any(), any())).thenReturn(true);
+            when(ioWriterMock.copyOffsetIndex(any(), any())).thenReturn(true);
+            when(ioWriterMock.copyLeaderEpochIndex(any(), any())).thenReturn(true);
+            when(ioWriterMock.copyProducerSnapshotIndex(any(), any())).thenReturn(true);
+            when(ioWriterMock.copyTransactionalIndex(any(), any())).thenReturn(true);
+            when(ioWriterMock.copyTimeIndex(any(), any())).thenReturn(true);
 
 
             final String topicName = "tieredTopic";
@@ -287,33 +297,37 @@ public class NaiveRemoteStorageManagerTest {
 
             assertEquals(copyMetadataExpected, copyMetadataActual);
 
-            verify(minioClientMock, times(6)).putObject(any(io.minio.PutObjectArgs.class));
+            verify(ioWriterMock, times(1)).copySegmentData(any(), any());
+            verify(ioWriterMock, times(1)).copyTimeIndex(any(), any());
+            verify(ioWriterMock, times(1)).copyTransactionalIndex(any(), any());
+            verify(ioWriterMock, times(1)).copyOffsetIndex(any(), any());
+            verify(ioWriterMock, times(1)).copyProducerSnapshotIndex(any(), any());
+            verify(ioWriterMock, times(1)).copyLeaderEpochIndex(any(), any());
         }
 
     }
 
     @Test
     public void testCopyLogSegmentDataWithoutTnxIndex() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
 
-            when(minioClientMock.putObject(any(io.minio.PutObjectArgs.class)))
-                    .thenReturn(new io.minio.ObjectWriteResponse(
-                            okhttp3.Headers.of(),
-                            remoteStorageManager.getBucketName(),
-                            "",
-                            "",
-                            "",
-                            ""));
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
+            when(ioWriterMock.copySegmentData(any(), any())).thenReturn(true);
+            when(ioWriterMock.copyOffsetIndex(any(), any())).thenReturn(true);
+            when(ioWriterMock.copyLeaderEpochIndex(any(), any())).thenReturn(true);
+            when(ioWriterMock.copyProducerSnapshotIndex(any(), any())).thenReturn(true);
+            when(ioWriterMock.copyTimeIndex(any(), any())).thenReturn(true);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -376,27 +390,35 @@ public class NaiveRemoteStorageManagerTest {
 
             assertEquals(copyMetadataExpected.getByteValue(), copyMetadataActual.getByteValue());
 
-            verify(minioClientMock, times(5)).putObject(any(io.minio.PutObjectArgs.class));
+            verify(ioWriterMock, times(1)).copySegmentData(any(), any());
+            verify(ioWriterMock, times(1)).copyTimeIndex(any(), any());
+            verify(ioWriterMock, times(0)).copyTransactionalIndex(any(), any());
+            verify(ioWriterMock, times(1)).copyOffsetIndex(any(), any());
+            verify(ioWriterMock, times(1)).copyProducerSnapshotIndex(any(), any());
+            verify(ioWriterMock, times(1)).copyLeaderEpochIndex(any(), any());
         }
 
     }
 
     @Test
     public void testCopySegmentDataOnIOException() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
 
-            when(minioClientMock.putObject(any(io.minio.PutObjectArgs.class)))
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
+
+            when(ioWriterMock.copySegmentData(any(), any()))
                     .thenAnswer(invocation -> {
-                        throw new IOException();
+                        throw new RemoteStorageException("");
                     });
 
 
@@ -450,22 +472,25 @@ public class NaiveRemoteStorageManagerTest {
                             remoteLogSegmentMetadata,
                             logSegmentData));
 
-            verify(minioClientMock, times(1)).putObject(any(io.minio.PutObjectArgs.class));
+            verify(ioWriterMock, times(1)).copySegmentData(any(), any());
         }
     }
 
     @Test
     public void testFetchSegmentFromStartPosition() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -497,15 +522,8 @@ public class NaiveRemoteStorageManagerTest {
                     Map.of(1, 0L));
 
 
-            final GetObjectResponse response = new GetObjectResponse(
-                    Headers.of(),
-                    "bucket",
-                    "region",
-                    "object",
-                    InputStream.nullInputStream());
-
-            when(minioClientMock.getObject(any(io.minio.GetObjectArgs.class)))
-                    .thenReturn(response);
+            when(ioFetcherMock.fetchLogSegmentData(any(), eq(0)))
+                    .thenReturn(InputStream.nullInputStream());
 
 
             final var result = remoteStorageManager.fetchLogSegment(
@@ -513,22 +531,28 @@ public class NaiveRemoteStorageManagerTest {
                     0);
             assertNotNull(result);
 
-            verify(minioClientMock, times(1)).getObject(any(GetObjectArgs.class));
+            final Fetcher verify = verify(ioFetcherMock, times(1));
+            try (final var fetch = verify.fetchLogSegmentData(any(), eq(0))) {
+                assertNull(fetch);
+            }
         }
     }
 
     @Test
     public void testFetchLogSegmentFromStartPositionEmptyMetadata() {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -567,16 +591,19 @@ public class NaiveRemoteStorageManagerTest {
 
     @Test
     public void testFetchLogSegmentFromStartPositionWithNoCopySegmentFlagMetadata() {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -615,20 +642,28 @@ public class NaiveRemoteStorageManagerTest {
 
     @Test
     public void testFetchSegmentOnIOException() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
 
-            when(minioClientMock.getObject(any(GetObjectArgs.class)))
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
+
+            when(ioFetcherMock.fetchLogSegmentData(any(), any(Integer.class), any(Integer.class)))
                     .thenAnswer(invocation -> {
-                        throw new IOException();
+                        throw new RemoteStorageException("");
+                    });
+
+            when(ioFetcherMock.fetchLogSegmentData(any(), eq(0)))
+                    .thenAnswer(invocation -> {
+                        throw new RemoteStorageException("");
                     });
 
             final String topicName = "tieredTopic";
@@ -671,16 +706,19 @@ public class NaiveRemoteStorageManagerTest {
 
     @Test
     public void testFetchSegmentFromStartAndEndPosition() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -712,15 +750,8 @@ public class NaiveRemoteStorageManagerTest {
                     Map.of(1, 0L));
 
 
-            final GetObjectResponse response = new GetObjectResponse(
-                    Headers.of(),
-                    "bucket",
-                    "region",
-                    "object",
-                    InputStream.nullInputStream());
-
-            when(minioClientMock.getObject(any(io.minio.GetObjectArgs.class)))
-                    .thenReturn(response);
+            when(ioFetcherMock.fetchLogSegmentData(any(), eq(0), eq(2000)))
+                    .thenReturn(InputStream.nullInputStream());
 
 
             final var result = remoteStorageManager.fetchLogSegment(
@@ -729,22 +760,29 @@ public class NaiveRemoteStorageManagerTest {
                     2000);
             assertNotNull(result);
 
-            verify(minioClientMock, times(1)).getObject(any(GetObjectArgs.class));
+            final Fetcher verify = verify(ioFetcherMock, times(1));
+            try (final var fetch = verify.fetchLogSegmentData(any(), eq(0), eq(2000))) {
+                assertNull(fetch);
+            }
+
         }
     }
 
     @Test
     public void testFetchLogSegmentFromStartToEndPositionEmptyMetadata() {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -783,16 +821,19 @@ public class NaiveRemoteStorageManagerTest {
 
     @Test
     public void testFetchLogSegmentFromStartToEndPositionWithNoCopySegmentFlagMetadata() {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -831,16 +872,19 @@ public class NaiveRemoteStorageManagerTest {
 
     @Test
     public void testFetchOffsetIndex() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -872,15 +916,8 @@ public class NaiveRemoteStorageManagerTest {
                     Map.of(1, 0L));
 
 
-            final GetObjectResponse response = new GetObjectResponse(
-                    Headers.of(),
-                    "bucket",
-                    "region",
-                    "object",
-                    InputStream.nullInputStream());
-
-            when(minioClientMock.getObject(any(io.minio.GetObjectArgs.class)))
-                    .thenReturn(response);
+            when(ioFetcherMock.readIndex(any(), any()))
+                    .thenReturn(InputStream.nullInputStream());
 
 
             final var result = remoteStorageManager.fetchIndex(
@@ -888,22 +925,29 @@ public class NaiveRemoteStorageManagerTest {
                     RemoteStorageManager.IndexType.OFFSET);
             assertNotNull(result);
 
-            verify(minioClientMock, times(1)).getObject(any(GetObjectArgs.class));
+            final Fetcher verify = verify(ioFetcherMock, times(1));
+
+            try (final var index = verify.readIndex(any(), any())) {
+                assertNull(index);
+            }
         }
     }
 
     @Test
     public void testFetchTimeIndex() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -935,15 +979,8 @@ public class NaiveRemoteStorageManagerTest {
                     Map.of(1, 0L));
 
 
-            final GetObjectResponse response = new GetObjectResponse(
-                    Headers.of(),
-                    "bucket",
-                    "region",
-                    "object",
-                    InputStream.nullInputStream());
-
-            when(minioClientMock.getObject(any(io.minio.GetObjectArgs.class)))
-                    .thenReturn(response);
+            when(ioFetcherMock.readIndex(any(), any()))
+                    .thenReturn(InputStream.nullInputStream());
 
 
             final var result = remoteStorageManager.fetchIndex(
@@ -951,22 +988,28 @@ public class NaiveRemoteStorageManagerTest {
                     RemoteStorageManager.IndexType.TIMESTAMP);
             assertNotNull(result);
 
-            verify(minioClientMock, times(1)).getObject(any(GetObjectArgs.class));
+            final Fetcher verify = verify(ioFetcherMock, times(1));
+            try (final var index = verify.readIndex(any(), any())) {
+                assertNull(index);
+            }
         }
     }
 
     @Test
     public void testFetchTxnIndex() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -998,15 +1041,8 @@ public class NaiveRemoteStorageManagerTest {
                     Map.of(1, 0L));
 
 
-            final GetObjectResponse response = new GetObjectResponse(
-                    Headers.of(),
-                    "bucket",
-                    "region",
-                    "object",
-                    InputStream.nullInputStream());
-
-            when(minioClientMock.getObject(any(io.minio.GetObjectArgs.class)))
-                    .thenReturn(response);
+            when(ioFetcherMock.readIndex(any(), any()))
+                    .thenReturn(InputStream.nullInputStream());
 
 
             final var result = remoteStorageManager.fetchIndex(
@@ -1014,23 +1050,29 @@ public class NaiveRemoteStorageManagerTest {
                     RemoteStorageManager.IndexType.TRANSACTION);
             assertNotNull(result);
 
-            verify(minioClientMock, times(1)).getObject(any(GetObjectArgs.class));
+            final Fetcher verify = verify(ioFetcherMock, times(1));
+            try (final var index = verify.readIndex(any(), any())) {
+                assertNull(index);
+            }
         }
     }
 
 
     @Test
     public void testFetchProducerSnapshotIndex() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -1062,15 +1104,8 @@ public class NaiveRemoteStorageManagerTest {
                     Map.of(1, 0L));
 
 
-            final GetObjectResponse response = new GetObjectResponse(
-                    Headers.of(),
-                    "bucket",
-                    "region",
-                    "object",
-                    InputStream.nullInputStream());
-
-            when(minioClientMock.getObject(any(io.minio.GetObjectArgs.class)))
-                    .thenReturn(response);
+            when(ioFetcherMock.readIndex(any(), any()))
+                    .thenReturn(InputStream.nullInputStream());
 
 
             final var result = remoteStorageManager.fetchIndex(
@@ -1078,22 +1113,28 @@ public class NaiveRemoteStorageManagerTest {
                     RemoteStorageManager.IndexType.PRODUCER_SNAPSHOT);
             assertNotNull(result);
 
-            verify(minioClientMock, times(1)).getObject(any(GetObjectArgs.class));
+            final Fetcher verify = verify(ioFetcherMock, times(1));
+            try (final var index = verify.readIndex(any(), any())) {
+                assertNull(index);
+            }
         }
     }
 
     @Test
     public void testFetchLeaderEpochIndex() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -1125,38 +1166,39 @@ public class NaiveRemoteStorageManagerTest {
                     Map.of(1, 0L));
 
 
-            final GetObjectResponse response = new GetObjectResponse(
-                    Headers.of(),
-                    "bucket",
-                    "region",
-                    "object",
-                    InputStream.nullInputStream());
-
-            when(minioClientMock.getObject(any(io.minio.GetObjectArgs.class)))
-                    .thenReturn(response);
+            when(ioFetcherMock.readIndex(any(), eq(RemoteStorageManager.IndexType.LEADER_EPOCH)))
+                    .thenReturn(InputStream.nullInputStream());
 
 
-            final var result = remoteStorageManager.fetchIndex(
+
+            try (final var result = remoteStorageManager.fetchIndex(
                     remoteLogSegmentMetadata,
-                    RemoteStorageManager.IndexType.LEADER_EPOCH);
-            assertNotNull(result);
+                    RemoteStorageManager.IndexType.LEADER_EPOCH)) {
+                assertNotNull(result);
+            }
 
-            verify(minioClientMock, times(1)).getObject(any(GetObjectArgs.class));
+            final Fetcher verify = verify(ioFetcherMock, times(1));
+            try (final var index = verify.readIndex(any(), eq(RemoteStorageManager.IndexType.LEADER_EPOCH))) {
+                assertNull(index);
+            }
         }
     }
 
     @Test
     public void testFetchIndexWithoutMetadata() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -1193,22 +1235,28 @@ public class NaiveRemoteStorageManagerTest {
                             remoteLogSegmentMetadata,
                             RemoteStorageManager.IndexType.LEADER_EPOCH));
 
-            verify(minioClientMock, times(0)).getObject(any(GetObjectArgs.class));
+            final Fetcher verify = verify(ioFetcherMock, times(0));
+            try (final var index = verify.readIndex(any(), any())) {
+                assertNull(index);
+            }
         }
     }
 
     @Test
     public void testFetchIndexCancelledByMetadata() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -1244,26 +1292,32 @@ public class NaiveRemoteStorageManagerTest {
                             remoteLogSegmentMetadata,
                             RemoteStorageManager.IndexType.LEADER_EPOCH));
 
-            verify(minioClientMock, times(0)).getObject(any(GetObjectArgs.class));
+            final Fetcher verify = verify(ioFetcherMock, times(0));
+            try (final var index = verify.readIndex(any(), any())) {
+                assertNull(index);
+            }
         }
     }
 
     @Test
     public void testFetchIndexOnIOException() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriter = mock(Writer.class);
+        final var ioFetcher = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcher.getConfig()).thenReturn(new ConnectionConfig(cfg));
 
-            when(minioClientMock.getObject(any(GetObjectArgs.class)))
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriter, ioFetcher)) {
+            remoteStorageManager.configure(cfg);
+
+            when(ioFetcher.readIndex(any(), any()))
                     .thenAnswer(invocation -> {
-                        throw new IOException();
+                        throw new RemoteStorageException("");
                     });
 
             final String topicName = "tieredTopic";
@@ -1300,23 +1354,24 @@ public class NaiveRemoteStorageManagerTest {
                     () -> remoteStorageManager.fetchIndex(
                             remoteLogSegmentMetadata,
                             RemoteStorageManager.IndexType.OFFSET));
-
-            verify(minioClientMock, times(1)).getObject(any(GetObjectArgs.class));
         }
     }
 
     @Test
     public void testDeleteSegment() throws Exception {
-        final var minioClientMock = mock(io.minio.MinioClient.class);
-        Assertions.assertNotNull(minioClientMock);
+        final var ioWriterMock = mock(Writer.class);
+        final var ioFetcherMock = mock(Fetcher.class);
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(minioClientMock)) {
-            remoteStorageManager.configure(Map.of(
-                    "minio.url", "http://0.0.0.0",
-                    "minio.access.key", "access key",
-                    "minio.secret.key", "secret key",
-                    "minio.auto.create.bucket", false
-            ));
+        final var cfg = Map.of(
+                "minio.url", "http://0.0.0.0",
+                "minio.access.key", "access key",
+                "minio.secret.key", "secret key",
+                "minio.auto.create.bucket", false
+        );
+        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+            remoteStorageManager.configure(cfg);
 
             final String topicName = "tieredTopic";
             final int partition = 0;
@@ -1347,10 +1402,10 @@ public class NaiveRemoteStorageManagerTest {
                     RemoteLogSegmentState.COPY_SEGMENT_STARTED,
                     Map.of(1, 0L));
 
+            doNothing().when(ioFetcherMock).deleteSegmentObject(any());
 
-            doNothing().when(minioClientMock).removeObject(any());
             remoteStorageManager.deleteLogSegmentData(remoteLogSegmentMetadata);
-            verify(minioClientMock, times(6)).removeObject(any());
+            verify(ioFetcherMock, times(6)).deleteSegmentObject(any());
         }
     }
 

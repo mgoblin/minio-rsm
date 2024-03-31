@@ -18,24 +18,6 @@
         "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
         "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 <suppressions>
-    <suppress checks="AbbreviationAsWordInName" files="DataKeyAndAADEqualsTest"/>
     <suppress checks="ClassDataAbstractionCoupling" files=".*Test\.java"/>
     <suppress checks="ClassFanOutComplexity" files=".*Test\.java"/>
-    <suppress checks="ClassFanOutComplexity" files="RemoteStorageManager.java"/>
-    <suppress checks="ClassFanOutComplexity" files="ChunkCache.java"/>
-    <suppress checks="ClassFanOutComplexity" files="AzureBlobStorage.java"/>
-    <suppress checks="ClassDataAbstractionCoupling" files="CaffeineStatsCounter.java"/>
-    <suppress checks="ClassDataAbstractionCoupling" files="S3StorageConfig.java"/>
-    <suppress checks="ClassDataAbstractionCoupling" files="RemoteStorageManager.java"/>
-    <suppress checks="ClassDataAbstractionCoupling" files="Metrics.java"/>
-    <suppress checks="ClassDataAbstractionCoupling" files="MetricCollector.java"/>
-    <suppress checks="ClassDataAbstractionCoupling" files="AzureBlobStorage.java"/>
-    <suppress checks="CyclomaticComplexity" files="MetricCollector.java"/>
-    <suppress checks="CyclomaticComplexity" files="SegmentIndexesV1Builder.java"/>
-    <suppress checks="CyclomaticComplexity" files="SingleBrokerTest.java"/>
-    <suppress checks="NPathComplexity" files="SingleBrokerTest.java"/>
-    <suppress checks="JavaNCSSCheck" files="MetricsRegistry.java"/>
-    <suppress checks="JavaNCSSCheck" files="RemoteStorageManagerMetricsTest.java"/>
-    <suppress checks="JavaNCSSCheck" files="SingleBrokerTest.java"/>
-    <suppress checks="NPathComplexity" files="CredentialsBuilder.java"/>
 </suppressions>
