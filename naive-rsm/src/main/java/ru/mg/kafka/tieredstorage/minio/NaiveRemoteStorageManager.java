@@ -37,20 +37,41 @@ import ru.mg.kafka.tieredstorage.minio.metadata.MetadataUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO Add Javadoc
 // TODO Update unit tests - add fixtures
 // TODO Update unit tests - add parametric tests for exception cases
 // TODO Add integration tests
+
+/**
+ * Straightforward Kafka RemoteStorageManager implementation with Minio S3
+ * as tiered storage
+ * <p>
+ *     After creation by constructor, NaiveRemoteStorageManager is not fully initialized.
+ *     The configure method is expected to be called with the configuration map to complete
+ *     the initialization.
+ * </p>
+ * <p>
+ *  *     Delegates writing Kafka log segments to Minio S3 to {@link Writer} and fetching to
+ *  * {@link Fetcher}.
+ *  * </p>
+ */
 public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.remote.storage.RemoteStorageManager {
+    /** Logger **/
     private static final Logger log = LoggerFactory.getLogger(NaiveRemoteStorageManager.class);
 
+    /**
+     * Ready to work flag.
+     * <p>
+     *     After the constructor is called, the flag is false, suggesting that the configure method will be called
+     *     to complete the initialization.
+     * </p>
+     */
     private boolean initialized = false;
 
     private Writer ioWriter;
     private Fetcher ioFetcher;
 
     /**
-     * For testing
+     * For testing purposes
      * @param ioWriter ioWriter mock
      * @param ioFetcher ioFetcher mock
      */
@@ -70,7 +91,10 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         super();
     }
 
-    private void ensureInitialized() {
+    /**
+     * Ensures that NaiveRemoteStorageManager is initialized and reinitializes if necessary.
+     */
+    private void ensureInitialized() throws RemoteStorageException {
         if (!initialized) {
             log.debug("Remote log manager not initialized. Try to initialize.");
             configure(ioFetcher.getConfig().originals());
@@ -79,8 +103,22 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                     NaiveRemoteStorageManager.class.getName(),
                     ioFetcher.getConfig().toString());
         }
+
+        //TODO implement tests
+        if (!initialized) {
+            log.error("Remote Storage Manager still not initialized.");
+            throw new RemoteStorageException("Not initialized.");
+        }
     }
 
+    /**
+     * Copies log segment data and indexes to S3 Minio remote storage.
+     *
+     * @param remoteLogSegmentMetadata metadata
+     * @param logSegmentData log segment data
+     * @return custom metadata that contains copied indexes bimap
+     * @throws RemoteStorageException on failures
+     */
     @Override
     public Optional<RemoteLogSegmentMetadata.CustomMetadata> copyLogSegmentData(
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata,
@@ -141,75 +179,139 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         return Optional.of(customMetadata);
     }
 
+    /**
+     * Fetches log segment data bytes from S3 Minio remote storage at start position
+     *
+     * @param remoteLogSegmentMetadata segment metadata
+     * @param startPosition start position
+     * @return segment data input stream
+     * @throws RemoteStorageException on failures
+     */
     @Override
     public InputStream fetchLogSegment(
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata,
             final int startPosition
     ) throws RemoteStorageException {
+
+        log.trace("Start to fetching log segment with metadata {} and segment from start position {}",
+                remoteLogSegmentMetadata,
+                startPosition);
+
+        ensureInitialized();
+
         final NameAssigner nameAssigner = new NameAssigner(remoteLogSegmentMetadata);
         final String segmentObjectName = nameAssigner.logSegmentObjectName();
 
         if (MetadataUtils.metadata(remoteLogSegmentMetadata).isDataNotEmpty()) {
-            ensureInitialized();
-            return ioFetcher.fetchLogSegmentData(segmentObjectName, startPosition);
+            log.trace("Fetch from start {} metadata flag is set for log data", startPosition);
+            final InputStream inputStream = ioFetcher.fetchLogSegmentData(segmentObjectName, startPosition);
+            log.trace("Fetch log segment with metadata {} and segment from start position {} finished",
+                    remoteLogSegmentMetadata,
+                    startPosition);
+            return inputStream;
         } else {
-            log.error("Fetch log segment data start position {} with path {} is cancelled.",
+            log.error("Wrong metadata flag for segment. "
+                            + "Fetch log segment data start position {} with path {} is cancelled.",
                     startPosition,
                     segmentObjectName);
             throw new RemoteResourceNotFoundException(String.format(
-                    "Fetch segment %s with wrong metadata %s",
+                    "Fetch segment %s have empty data exists metadata flag %s",
                     segmentObjectName,
                     MetadataUtils.metadata(remoteLogSegmentMetadata)));
         }
     }
 
+    /**
+     * Fetches log segment data bytes from S3 Minio remote storage at [start .. end] position
+     *
+     * @param remoteLogSegmentMetadata segment metadata
+     * @param startPosition start position
+     * @param endPosition end position
+     * @return segment data input stream
+     * @throws RemoteStorageException on failures
+     */
     @Override
     public InputStream fetchLogSegment(
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata,
             final int startPosition,
             final int endPosition
     ) throws RemoteStorageException {
+        log.trace("Start to fetching log segment with metadata {} and segment from start {} to end {} position.",
+                remoteLogSegmentMetadata,
+                startPosition,
+                endPosition
+        );
+        ensureInitialized();
+
         final NameAssigner nameAssigner = new NameAssigner(remoteLogSegmentMetadata);
         final String segmentObjectName = nameAssigner.logSegmentObjectName();
 
         if (MetadataUtils.metadata(remoteLogSegmentMetadata).isDataNotEmpty()) {
-            ensureInitialized();
-            return ioFetcher.fetchLogSegmentData(segmentObjectName, startPosition, endPosition);
+            log.trace("Fetch from start {} to end {} metadata flag is set for log data", startPosition, endPosition);
+            final InputStream inputStream = ioFetcher.fetchLogSegmentData(
+                    segmentObjectName,
+                    startPosition,
+                    endPosition);
+            log.trace("Fetch log segment with metadata {} and segment from start {} to end {} position finished.",
+                    remoteLogSegmentMetadata,
+                    startPosition,
+                    endPosition);
+            return inputStream;
         } else {
-            log.error("Fetch log segment data start position {} end position {} with path {} is cancelled.",
+            log.error("Wrong metadata flag for segment. "
+                            + "Fetch log segment data start {} to end {} position  with path {} is cancelled.",
                     startPosition,
                     endPosition,
                     segmentObjectName);
-            throw new RemoteStorageException(String.format(
-                    "Fetch segment %s with wrong metadata %s",
+            throw new RemoteResourceNotFoundException(String.format(
+                    "Fetch segment %s have empty data exists metadata flag %s",
                     segmentObjectName,
                     MetadataUtils.metadata(remoteLogSegmentMetadata)));
         }
     }
 
+    /**
+     * Fetch index if exists from S3 Minio remote storage
+     *
+     * @param remoteLogSegmentMetadata metadata about the remote log segment.
+     * @param indexType                type of the index to be fetched for the segment.
+     * @return input stream with index data
+     * @throws RemoteStorageException on failure
+     */
     @Override
     public InputStream fetchIndex(
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata,
             final IndexType indexType
     ) throws RemoteStorageException {
+
+        log.trace("Start to fetch index with type {} and metadata {}", indexType, remoteLogSegmentMetadata);
+
+        ensureInitialized();
+
         final NameAssigner nameAssigner = new NameAssigner(remoteLogSegmentMetadata);
         final String indexObjectName = nameAssigner.indexNameByType(indexType);
 
         if (MetadataUtils.metadata(remoteLogSegmentMetadata).isIndexNotEmpty()) {
-            ensureInitialized();
-            return ioFetcher.readIndex(indexObjectName, indexType);
+            log.trace("Fetch index {} metadata flag is set", indexType);
+            final InputStream inputStream = ioFetcher.readIndex(indexObjectName, indexType);
+            log.trace("Fetch index with type {} and metadata {} finished", indexType, remoteLogSegmentMetadata);
+            return inputStream;
+        } else if (indexType != IndexType.TRANSACTION) {
+            log.error("Fetch index {} from {} failed. Metadata doesn't have index flag {}",
+                    indexType, indexObjectName, MetadataUtils.metadata(remoteLogSegmentMetadata));
+            throw new RemoteStorageException("Metadata flag for index is false");
         } else {
-            if (indexType != IndexType.TRANSACTION) {
-                log.error("Fetch index {} from {} failed. Metadata doesn't have index flag {}",
-                        indexType, indexObjectName, MetadataUtils.metadata(remoteLogSegmentMetadata));
-                throw new RemoteStorageException("Metadata flag for index is false");
-            } else {
-                log.debug("Fetch index {} from {} finished. Log not found", indexType, indexObjectName);
-                throw new RemoteResourceNotFoundException("Transactional index is not found");
-            }
+            log.debug("Fetch index {} from {} finished. Index have empty metadata flag", indexType, indexObjectName);
+            throw new RemoteResourceNotFoundException("Transactional index is not found");
         }
     }
 
+    /**
+     * Delete log segment data and indexes from S3 Minio remote storage.
+     *
+     * @param remoteLogSegmentMetadata metadata about the remote log segment to be deleted.
+     * @throws RemoteStorageException on failure
+     */
     @Override
     public void deleteLogSegmentData(
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata
@@ -234,21 +336,33 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         log.debug("Objects for delete from {} are {}", names.getBaseName(), segmentObjectNames);
 
         for (final String dataObjectName: segmentObjectNames) {
+            log.trace("Delete {} file", dataObjectName);
             ioFetcher.deleteSegmentObject(dataObjectName);
         }
         log.debug("Delete log files {} finished", names.getBaseName());
     }
 
+    /**
+     * Uninitialize and close RemoteStorageManager
+     */
     @Override
     public void close() {
+        log.trace("Closing RemoteStorageManager");
         if (initialized) {
+            log.trace("Close initialized RemoteStorageManager.");
             ioWriter = null;
             ioFetcher = null;
             initialized = false;
+        } else {
+            log.trace("RemoteStorageManager is uninitialized. Close do nothing.");
         }
         log.debug("Remote storage manager closed");
     }
 
+    /**
+     * Initialize RemoteStorageManager
+     * @param configs user configs
+     */
     @Override
     public void configure(final Map<String, ?> configs) {
 
@@ -277,6 +391,10 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         }
     }
 
+    /**
+     * Get initialization state
+     * @return initialization state
+     */
     public boolean isInitialized() {
         return initialized;
     }
