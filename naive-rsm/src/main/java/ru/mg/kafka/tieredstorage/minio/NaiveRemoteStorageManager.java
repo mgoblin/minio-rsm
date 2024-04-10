@@ -17,11 +17,11 @@
 package ru.mg.kafka.tieredstorage.minio;
 
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.apache.kafka.server.log.remote.storage.LogSegmentData;
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 // TODO Update unit tests - add fixtures
 // TODO Add integration tests
+// TODO Clarify multiple delete leader epoch file
 
 /**
  * Straightforward Kafka RemoteStorageManager implementation with Minio S3
@@ -325,20 +326,27 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
         log.debug("Delete log files {} started", names.getBaseName());
 
-        final Collection<String> segmentObjectNames = List.of(
-                names.logSegmentObjectName(),
-                names.indexObjectName(),
-                names.timeIndexObjectName(),
-                names.transactionIndexObjectName(),
-                names.producerSnapshotObjectName(),
-                names.leaderEpochObjectName()
+        final ByteEncodedMetadata metadata = MetadataUtils.metadata(remoteLogSegmentMetadata);
+
+        final Map<String, Boolean> namesWithMetadata = Map.of(
+                names.logSegmentObjectName(), metadata.isDataNotEmpty(),
+                names.indexObjectName(), metadata.isIndexNotEmpty(),
+                names.timeIndexObjectName(), metadata.isTimeIndexNotEmpty(),
+                names.transactionIndexObjectName(), metadata.isTransactionIndexNotEmpty(),
+                names.producerSnapshotObjectName(), metadata.isProducerSnapshotIndexNotEmpty(),
+                names.leaderEpochObjectName(), metadata.isLeaderEpochIndexNotEmpty()
         );
+        final List<String> segmentObjectNames = namesWithMetadata.entrySet().stream()
+                .filter(Map.Entry::getValue)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
 
         log.debug("Objects for delete from {} are {}", names.getBaseName(),
                 String.join(", " + System.lineSeparator(), segmentObjectNames));
 
         for (final String dataObjectName: segmentObjectNames) {
             log.trace("Delete {} file", dataObjectName);
+
             ioFetcher.deleteSegmentObject(dataObjectName);
         }
         log.debug("Delete log files {} finished", names.getBaseName());
