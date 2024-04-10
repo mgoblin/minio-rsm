@@ -94,6 +94,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
      * Ensures that NaiveRemoteStorageManager is initialized and reinitializes if necessary.
      */
     private void ensureInitialized() throws RemoteStorageException {
+        log.trace("Start ensuring {} initialized", NaiveRemoteStorageManager.class.getName());
         if (!initialized) {
             log.debug("Remote log manager not initialized. Try to initialize.");
             configure(ioFetcher.getConfig().originals());
@@ -108,6 +109,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
             log.error("Remote Storage Manager still not initialized.");
             throw new RemoteStorageException("Not initialized.");
         }
+        log.trace("Finish ensuring {} initialized", NaiveRemoteStorageManager.class.getName());
     }
 
     /**
@@ -332,7 +334,8 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                 names.leaderEpochObjectName()
         );
 
-        log.debug("Objects for delete from {} are {}", names.getBaseName(), segmentObjectNames);
+        log.debug("Objects for delete from {} are {}", names.getBaseName(),
+                String.join(", " + System.lineSeparator(), segmentObjectNames));
 
         for (final String dataObjectName: segmentObjectNames) {
             log.trace("Delete {} file", dataObjectName);
@@ -365,12 +368,18 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
     @Override
     public void configure(final Map<String, ?> configs) {
 
+        log.trace("Staring to configure {}", NaiveRemoteStorageManager.class);
+
         if (!initialized) {
-            log.debug("Configure remote storage manager");
+            log.debug("Try to configure remote storage manager {}", NaiveRemoteStorageManager.class);
             Objects.requireNonNull(configs, "configs must not be null");
 
             this.ioWriter = new Writer(configs);
             this.ioFetcher = new Fetcher(configs);
+
+            log.debug("Writer {} and Fetcher {} configuration success.",
+                    this.ioWriter.getClass(),
+                    this.ioFetcher.getClass());
         }
 
         try {
@@ -386,7 +395,9 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
             ioFetcher = null;
             ioWriter = null;
             initialized = false;
-            log.error("RemoteStorageManager configuration failed. recoverable error occurred.", e);
+            log.error("{} configuration failed. recoverable error occurred.",
+                    NaiveRemoteStorageManager.class,
+                    e);
         }
     }
 
