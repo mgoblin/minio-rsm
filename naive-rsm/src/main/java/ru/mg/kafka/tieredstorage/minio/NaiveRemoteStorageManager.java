@@ -333,8 +333,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                 names.indexObjectName(), metadata.isIndexNotEmpty(),
                 names.timeIndexObjectName(), metadata.isTimeIndexNotEmpty(),
                 names.transactionIndexObjectName(), metadata.isTransactionIndexNotEmpty(),
-                names.producerSnapshotObjectName(), metadata.isProducerSnapshotIndexNotEmpty(),
-                names.leaderEpochObjectName(), metadata.isLeaderEpochIndexNotEmpty()
+                names.producerSnapshotObjectName(), metadata.isProducerSnapshotIndexNotEmpty()
         );
         final List<String> segmentObjectNames = namesWithMetadata.entrySet().stream()
                 .filter(Map.Entry::getValue)

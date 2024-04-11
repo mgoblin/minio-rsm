@@ -1405,7 +1405,7 @@ public class NaiveRemoteStorageManagerTest {
             doNothing().when(ioFetcherMock).deleteSegmentObject(any());
 
             remoteStorageManager.deleteLogSegmentData(remoteLogSegmentMetadata);
-            verify(ioFetcherMock, times(6)).deleteSegmentObject(any());
+            verify(ioFetcherMock, times(5)).deleteSegmentObject(any());
         }
     }
 
