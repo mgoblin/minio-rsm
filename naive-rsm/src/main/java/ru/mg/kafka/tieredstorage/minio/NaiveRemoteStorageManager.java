@@ -293,7 +293,11 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         final NameAssigner nameAssigner = new NameAssigner(remoteLogSegmentMetadata);
         final String indexObjectName = nameAssigner.indexNameByType(indexType);
 
-        if (MetadataUtils.metadata(remoteLogSegmentMetadata).isIndexNotEmpty()) {
+        final byte metadataBitmap = remoteLogSegmentMetadata.customMetadata()
+                .orElse(new RemoteLogSegmentMetadata.CustomMetadata(new byte[]{0})).value()[0];
+        log.debug("Metadata bitmap value for index {} is {}", indexType, metadataBitmap);
+
+        if (MetadataUtils.metadata(remoteLogSegmentMetadata).isIndexOfTypePresent(indexType)) {
             log.trace("Fetch index {} metadata flag is set", indexType);
             final InputStream inputStream = ioFetcher.readIndex(indexObjectName, indexType);
             log.trace("Fetch index with type {} and metadata {} finished", indexType, remoteLogSegmentMetadata);
