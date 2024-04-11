@@ -302,10 +302,6 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
             final InputStream inputStream = ioFetcher.readIndex(indexObjectName, indexType);
             log.trace("Fetch index with type {} and metadata {} finished", indexType, remoteLogSegmentMetadata);
             return inputStream;
-        } else if (indexType != IndexType.TRANSACTION) {
-            log.error("Fetch index {} from {} failed. Metadata doesn't have index flag {}",
-                    indexType, indexObjectName, MetadataUtils.metadata(remoteLogSegmentMetadata));
-            throw new RemoteStorageException("Metadata flag for index is false");
         } else {
             log.debug("Fetch index {} from {} finished. Index have empty metadata flag", indexType, indexObjectName);
             throw new RemoteResourceNotFoundException("Transactional index is not found");
