@@ -202,7 +202,7 @@ public class Writer {
         return true;
     }
 
-    public void makeBucketIfNotExists() throws RecoverableConfigurationFailException {
+    public void tryToMakeBucket() throws RecoverableConfigurationFailException {
 
         try {
             if (config != null && config.isAutoCreateBucket()) {

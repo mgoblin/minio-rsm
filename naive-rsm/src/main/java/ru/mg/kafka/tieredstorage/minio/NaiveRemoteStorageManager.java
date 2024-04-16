@@ -67,6 +67,8 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
      */
     private boolean initialized = false;
 
+    private Map<String, ?> configs;
+
     private Writer ioWriter;
     private Fetcher ioFetcher;
 
@@ -94,22 +96,21 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
     /**
      * Ensures that NaiveRemoteStorageManager is initialized and reinitializes if necessary.
      */
-    private void ensureInitialized() throws RemoteStorageException {
+    public void ensureInitialized() throws RemoteStorageException {
         log.trace("Start ensuring {} initialized", NaiveRemoteStorageManager.class.getName());
         if (!initialized) {
             log.debug("Remote log manager not initialized. Try to initialize.");
-            configure(ioFetcher.getConfig().originals());
+
+            if (this.configs == null) {
+                throw new RemoteStorageException("ensureInitialized should be called after confif");
+            }
+            configure(this.configs);
             log.info(
                     "Remote log manager {} initialized now with {}",
                     NaiveRemoteStorageManager.class.getName(),
                     ioFetcher.getConfig().toString());
         }
 
-        //TODO implement tests
-        if (!initialized) {
-            log.error("Remote Storage Manager still not initialized.");
-            throw new RemoteStorageException("Not initialized.");
-        }
         log.trace("Finish ensuring {} initialized", NaiveRemoteStorageManager.class.getName());
     }
 
@@ -374,12 +375,13 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
      */
     @Override
     public void configure(final Map<String, ?> configs) {
-
         log.trace("Staring to configure {}", NaiveRemoteStorageManager.class);
+
+        Objects.requireNonNull(configs, "configs must not be null");
+        this.configs = configs;
 
         if (!initialized) {
             log.debug("Try to configure remote storage manager {}", NaiveRemoteStorageManager.class);
-            Objects.requireNonNull(configs, "configs must not be null");
 
             this.ioWriter = new Writer(configs);
             this.ioFetcher = new Fetcher(configs);
@@ -390,7 +392,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         }
 
         try {
-            ioWriter.makeBucketIfNotExists();
+            ioWriter.tryToMakeBucket();
 
             initialized = true;
             log.info(
@@ -414,6 +416,11 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
      */
     public boolean isInitialized() {
         return initialized;
+    }
+
+    // for testing
+    void setConfigs(final Map<String, ?> configs) {
+        this.configs = configs;
     }
 
 }

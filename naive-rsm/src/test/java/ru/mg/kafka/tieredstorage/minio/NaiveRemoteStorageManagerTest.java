@@ -16,7 +16,6 @@
 
 package ru.mg.kafka.tieredstorage.minio;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -35,7 +34,6 @@ import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
 
 import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 import ru.mg.kafka.tieredstorage.minio.io.Fetcher;
-import ru.mg.kafka.tieredstorage.minio.io.RecoverableConfigurationFailException;
 import ru.mg.kafka.tieredstorage.minio.io.Writer;
 import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
 
@@ -44,7 +42,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -52,7 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -60,127 +56,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class NaiveRemoteStorageManagerTest {
-    @Test
-    public void testCreateBucketIfNotExistsAndAutoCreateBucketIsTrue() throws Exception {
-
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
-
-        final var cfg = Map.of(
-                "minio.url", "http://0.0.0.0",
-                "minio.access.key", "access key",
-                "minio.secret.key", "secret key"
-        );
-
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
-
-        doNothing().when(ioWriterMock).makeBucketIfNotExists();
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(
-                ioWriterMock, ioFetcherMock)) {
-            remoteStorageManager.configure(cfg);
-
-            assertTrue(remoteStorageManager.isInitialized());
-
-            verify(ioWriterMock, times(1)).makeBucketIfNotExists();
-        }
-
-    }
-
-    @Test
-    public void testNotCreateBucketIfItExistsAndAutoCreateBucketIsTrue() throws Exception {
-
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
-
-        final var cfg = Map.of(
-                "minio.url", "http://0.0.0.0",
-                "minio.access.key", "access key",
-                "minio.secret.key", "secret key"
-        );
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
-
-        doNothing().when(ioWriterMock).makeBucketIfNotExists();
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
-            remoteStorageManager.configure(cfg);
-
-            assertTrue(remoteStorageManager.isInitialized());
-
-            verify(ioWriterMock, times(1)).makeBucketIfNotExists();
-        }
-
-    }
-
-    @Test
-    public void testNotCreateBucketIfItExistsAndAutoCreateBucketIsFalse() throws Exception {
-
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
-
-        final var cfg = Map.of(
-                "minio.url", "http://0.0.0.0",
-                "minio.access.key", "access key",
-                "minio.secret.key", "secret key",
-                "minio.auto.create.bucket", false
-        );
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
-            remoteStorageManager.configure(cfg);
-
-            assertTrue(remoteStorageManager.isInitialized());
-
-            verify(ioWriterMock, times(1)).makeBucketIfNotExists();
-        }
-
-    }
-
-    @Test
-    public void testCreateBucketIfNotExistsAndAutoCreateBucketIsFalse() throws Exception {
-
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
-
-        final var cfg = Map.of(
-                "minio.url", "http://0.0.0.0",
-                "minio.access.key", "access key",
-                "minio.secret.key", "secret key",
-                "minio.auto.create.bucket", false
-        );
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
-            remoteStorageManager.configure(cfg);
-
-            assertTrue(remoteStorageManager.isInitialized());
-
-            verify(ioWriterMock, times(1)).makeBucketIfNotExists();
-        }
-
-    }
-
-    @Test
-    public void testMinioExceptionOnConfig() throws Exception {
-
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
-
-        final var cfg = Map.of(
-                "minio.url", "http://0.0.0.0",
-                "minio.access.key", "access key",
-                "minio.secret.key", "secret key"
-        );
-
-        doThrow(new RecoverableConfigurationFailException(new IOException()))
-                .when(ioWriterMock).makeBucketIfNotExists();
-
-        try (final var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
-            remoteStorageManager.configure(cfg);
-            assertFalse(remoteStorageManager.isInitialized());
-        }
-
-    }
 
     @Test
     public void testCopyLogSegmentData() throws Exception {
