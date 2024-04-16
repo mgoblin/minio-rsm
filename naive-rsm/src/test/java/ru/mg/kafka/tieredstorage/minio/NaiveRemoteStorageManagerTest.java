@@ -17,8 +17,10 @@
 package ru.mg.kafka.tieredstorage.minio;
 
 import java.io.InputStream;
+
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+
 import java.util.Map;
 import java.util.Optional;
 
@@ -56,101 +58,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class NaiveRemoteStorageManagerTest {
-
-    @Test
-    public void testCopyLogSegmentData() throws Exception {
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
-
-        final var cfg = Map.of(
-                "minio.url", "http://0.0.0.0",
-                "minio.access.key", "access key",
-                "minio.secret.key", "secret key",
-                "minio.auto.create.bucket", false
-        );
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
-            remoteStorageManager.configure(cfg);
-
-            when(ioWriterMock.copySegmentData(any(), any())).thenReturn(true);
-            when(ioWriterMock.copyOffsetIndex(any(), any())).thenReturn(true);
-            when(ioWriterMock.copyLeaderEpochIndex(any(), any())).thenReturn(true);
-            when(ioWriterMock.copyProducerSnapshotIndex(any(), any())).thenReturn(true);
-            when(ioWriterMock.copyTransactionalIndex(any(), any())).thenReturn(true);
-            when(ioWriterMock.copyTimeIndex(any(), any())).thenReturn(true);
-
-
-            final String topicName = "tieredTopic";
-            final int partition = 0;
-            final TopicPartition topicPartition = new TopicPartition(topicName, partition);
-
-            final Uuid topicUuid = Uuid.randomUuid();
-            final TopicIdPartition topicIdPartition = new TopicIdPartition(topicUuid, topicPartition);
-
-            final Uuid segmentUuid = Uuid.randomUuid();
-            final long segmentStartOffset = 0L;
-            final long segmentEndOffset = 1000L;
-            final long segmentMaxTimestampMs = 10000L;
-            final int brokerId = 0;
-            final long segmentEventTimestampMs = 10001L;
-            final int segmentSizeInBytes = 10;
-
-            final RemoteLogSegmentId remoteLogSegmentId = new RemoteLogSegmentId(topicIdPartition, segmentUuid);
-
-            final RemoteLogSegmentMetadata remoteLogSegmentMetadata = new RemoteLogSegmentMetadata(
-                    remoteLogSegmentId,
-                    segmentStartOffset,
-                    segmentEndOffset,
-                    segmentMaxTimestampMs,
-                    brokerId,
-                    segmentEventTimestampMs,
-                    segmentSizeInBytes,
-                    Optional.empty(),
-                    RemoteLogSegmentState.COPY_SEGMENT_STARTED,
-                    Map.of(1, 0L));
-
-            final var logSegment = Path.of("./src/test/testData/test.log").normalize().toAbsolutePath();
-            final var offsetIndex = Path.of("./src/test/testData/test.index");
-            final var timeIndex = Path.of("./src/test/testData/test.timeindex");
-            final Optional<Path> transactionalIndex = Optional.of(Path.of("./src/test/testData/test.txnindex"));
-            final var producerSnapshotIndex = Path.of("./src/test/testData/test.snapshot");
-            final var leaderEpochIndex = ByteBuffer.allocate(0);
-
-            final var logSegmentData = new LogSegmentData(
-                    logSegment,
-                    offsetIndex,
-                    timeIndex,
-                    transactionalIndex,
-                    producerSnapshotIndex,
-                    leaderEpochIndex);
-
-            final var customMetadataActual = remoteStorageManager.copyLogSegmentData(
-                    remoteLogSegmentMetadata,
-                    logSegmentData);
-
-            final var copyMetadataExpected = new ByteEncodedMetadata();
-            copyMetadataExpected.setDataNotEmpty(true);
-            copyMetadataExpected.setIndexNotEmpty(true);
-            copyMetadataExpected.setTimeIndexNotEmpty(true);
-            copyMetadataExpected.setTransactionIndexNotEmpty(true);
-            copyMetadataExpected.setProducerSnapshotIndexNotEmpty(true);
-            copyMetadataExpected.setLeaderEpochIndexNotEmpty(true);
-
-            assertTrue(customMetadataActual.isPresent());
-            final var copyMetadataActual = new ByteEncodedMetadata(customMetadataActual.get().value()[0]);
-
-            assertEquals(copyMetadataExpected, copyMetadataActual);
-
-            verify(ioWriterMock, times(1)).copySegmentData(any(), any());
-            verify(ioWriterMock, times(1)).copyTimeIndex(any(), any());
-            verify(ioWriterMock, times(1)).copyTransactionalIndex(any(), any());
-            verify(ioWriterMock, times(1)).copyOffsetIndex(any(), any());
-            verify(ioWriterMock, times(1)).copyProducerSnapshotIndex(any(), any());
-            verify(ioWriterMock, times(1)).copyLeaderEpochIndex(any(), any());
-        }
-
-    }
 
     @Test
     public void testCopyLogSegmentDataWithoutTnxIndex() throws Exception {

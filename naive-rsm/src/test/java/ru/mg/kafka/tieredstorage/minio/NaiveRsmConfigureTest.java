@@ -17,6 +17,7 @@
 package ru.mg.kafka.tieredstorage.minio;
 
 import java.io.IOException;
+
 import java.util.Map;
 
 import org.apache.kafka.common.config.ConfigException;
