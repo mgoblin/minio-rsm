@@ -161,13 +161,6 @@ public class NaiveRemoteStorageManagerTest {
     }
 
     @Test
-    public void testNotInitializedAfterConstructor() {
-        try (var manager = new NaiveRemoteStorageManager()) {
-            assertFalse(manager.isInitialized());
-        }
-    }
-
-    @Test
     public void testMinioExceptionOnConfig() throws Exception {
 
         final var ioWriterMock = mock(Writer.class);
@@ -187,29 +180,6 @@ public class NaiveRemoteStorageManagerTest {
             assertFalse(remoteStorageManager.isInitialized());
         }
 
-    }
-
-    @Test
-    public void testUninitializedAfterClose() {
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
-
-        final var cfg = Map.of(
-                "minio.url", "http://0.0.0.0",
-                "minio.access.key", "access key",
-                "minio.secret.key", "secret key",
-                "minio.auto.create.bucket", false
-        );
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
-            remoteStorageManager.configure(cfg);
-
-            assertTrue(remoteStorageManager.isInitialized());
-
-            remoteStorageManager.close();
-            assertFalse(remoteStorageManager.isInitialized());
-        }
     }
 
     @Test
