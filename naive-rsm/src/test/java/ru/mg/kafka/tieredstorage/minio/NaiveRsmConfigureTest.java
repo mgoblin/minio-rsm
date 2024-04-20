@@ -23,10 +23,7 @@ import java.util.Map;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
-import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
-import ru.mg.kafka.tieredstorage.minio.io.Fetcher;
 import ru.mg.kafka.tieredstorage.minio.io.RecoverableConfigurationFailException;
-import ru.mg.kafka.tieredstorage.minio.io.Writer;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,12 +32,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class NaiveRsmConfigureTest {
@@ -60,35 +54,26 @@ public class NaiveRsmConfigureTest {
 
     @Test
     public void testTryToMakeBucket() throws RecoverableConfigurationFailException {
+        final var backendMock = new MockedBackend(MINIMAL_CFG);
+        final var bucketMock = backendMock.bucket();
 
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
-
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(MINIMAL_CFG));
-
-        doNothing().when(ioWriterMock).tryToMakeBucket();
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(
-                ioWriterMock,
-                ioFetcherMock)) {
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
 
             assertTrue(remoteStorageManager.isInitialized());
             remoteStorageManager.configure(MINIMAL_CFG);
 
-            verify(ioWriterMock, times(1)).tryToMakeBucket();
+            verify(bucketMock, times(1)).tryToMakeBucket();
         }
     }
 
     @Test
     public void testRecoverableConfigurationFailExceptionOnConfig() throws RecoverableConfigurationFailException {
-
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
+        final var backendMock = new MockedBackend(MINIMAL_CFG);
 
         doThrow(new RecoverableConfigurationFailException(new IOException()))
-                .when(ioWriterMock).tryToMakeBucket();
+                .when(backendMock.bucket()).tryToMakeBucket();
 
-        try (final var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+        try (final var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             assertTrue(remoteStorageManager.isInitialized());
 
             remoteStorageManager.configure(MINIMAL_CFG);

@@ -21,9 +21,6 @@ import java.util.Map;
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
-import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
-import ru.mg.kafka.tieredstorage.minio.io.Fetcher;
-import ru.mg.kafka.tieredstorage.minio.io.Writer;
 import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
 
 import org.junit.jupiter.api.Test;
@@ -34,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,20 +48,17 @@ public class NaiveRsmCopyTest {
 
     @Test
     public void testCopyLogSegmentData() throws Exception {
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
+        final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG));
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-            when(ioWriterMock.copySegmentData(any(), any())).thenReturn(true);
-            when(ioWriterMock.copyOffsetIndex(any(), any())).thenReturn(true);
-            when(ioWriterMock.copyLeaderEpochIndex(any(), any())).thenReturn(true);
-            when(ioWriterMock.copyProducerSnapshotIndex(any(), any())).thenReturn(true);
-            when(ioWriterMock.copyTransactionalIndex(any(), any())).thenReturn(true);
-            when(ioWriterMock.copyTimeIndex(any(), any())).thenReturn(true);
+            when(backendMock.uploader().copySegmentData(any(), any())).thenReturn(true);
+            when(backendMock.uploader().copyOffsetIndex(any(), any())).thenReturn(true);
+            when(backendMock.uploader().copyLeaderEpochIndex(any(), any())).thenReturn(true);
+            when(backendMock.uploader().copyProducerSnapshotIndex(any(), any())).thenReturn(true);
+            when(backendMock.uploader().copyTransactionalIndex(any(), any())).thenReturn(true);
+            when(backendMock.uploader().copyTimeIndex(any(), any())).thenReturn(true);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
             final var logSegmentData = LogSegmentDataUtils.logSegmentData();
@@ -87,30 +80,27 @@ public class NaiveRsmCopyTest {
 
             assertEquals(copyMetadataExpected, copyMetadataActual);
 
-            verify(ioWriterMock, times(1)).copySegmentData(any(), any());
-            verify(ioWriterMock, times(1)).copyTimeIndex(any(), any());
-            verify(ioWriterMock, times(1)).copyTransactionalIndex(any(), any());
-            verify(ioWriterMock, times(1)).copyOffsetIndex(any(), any());
-            verify(ioWriterMock, times(1)).copyProducerSnapshotIndex(any(), any());
-            verify(ioWriterMock, times(1)).copyLeaderEpochIndex(any(), any());
+            verify(backendMock.uploader(), times(1)).copySegmentData(any(), any());
+            verify(backendMock.uploader(), times(1)).copyTimeIndex(any(), any());
+            verify(backendMock.uploader(), times(1)).copyTransactionalIndex(any(), any());
+            verify(backendMock.uploader(), times(1)).copyOffsetIndex(any(), any());
+            verify(backendMock.uploader(), times(1)).copyProducerSnapshotIndex(any(), any());
+            verify(backendMock.uploader(), times(1)).copyLeaderEpochIndex(any(), any());
         }
     }
 
     @Test
     public void testCopyLogSegmentDataWithoutTnxIndex() throws Exception {
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
+        final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG));
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-            when(ioWriterMock.copySegmentData(any(), any())).thenReturn(true);
-            when(ioWriterMock.copyOffsetIndex(any(), any())).thenReturn(true);
-            when(ioWriterMock.copyLeaderEpochIndex(any(), any())).thenReturn(true);
-            when(ioWriterMock.copyProducerSnapshotIndex(any(), any())).thenReturn(true);
-            when(ioWriterMock.copyTimeIndex(any(), any())).thenReturn(true);
+            when(backendMock.uploader().copySegmentData(any(), any())).thenReturn(true);
+            when(backendMock.uploader().copyOffsetIndex(any(), any())).thenReturn(true);
+            when(backendMock.uploader().copyLeaderEpochIndex(any(), any())).thenReturn(true);
+            when(backendMock.uploader().copyProducerSnapshotIndex(any(), any())).thenReturn(true);
+            when(backendMock.uploader().copyTimeIndex(any(), any())).thenReturn(true);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
             final var logSegmentData = LogSegmentDataUtils.logSegmentData();
@@ -132,26 +122,23 @@ public class NaiveRsmCopyTest {
 
             assertEquals(copyMetadataExpected.getByteValue(), copyMetadataActual.getByteValue());
 
-            verify(ioWriterMock, times(1)).copySegmentData(any(), any());
-            verify(ioWriterMock, times(1)).copyTimeIndex(any(), any());
-            verify(ioWriterMock, times(1)).copyOffsetIndex(any(), any());
-            verify(ioWriterMock, times(1)).copyProducerSnapshotIndex(any(), any());
-            verify(ioWriterMock, times(1)).copyLeaderEpochIndex(any(), any());
+            verify(backendMock.uploader(), times(1)).copySegmentData(any(), any());
+            verify(backendMock.uploader(), times(1)).copyTimeIndex(any(), any());
+            verify(backendMock.uploader(), times(1)).copyOffsetIndex(any(), any());
+            verify(backendMock.uploader(), times(1)).copyProducerSnapshotIndex(any(), any());
+            verify(backendMock.uploader(), times(1)).copyLeaderEpochIndex(any(), any());
         }
 
     }
 
     @Test
     public void testCopySegmentDataOnIOException() throws Exception {
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
+        final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG));
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-            when(ioWriterMock.copySegmentData(any(), any()))
+            when(backendMock.uploader().copySegmentData(any(), any()))
                     .thenAnswer(invocation -> {
                         throw new RemoteStorageException("");
                     });
@@ -165,7 +152,7 @@ public class NaiveRsmCopyTest {
                             remoteLogSegmentMetadata,
                             logSegmentData));
 
-            verify(ioWriterMock, times(1)).copySegmentData(any(), any());
+            verify(backendMock.uploader(), times(1)).copySegmentData(any(), any());
         }
     }
 

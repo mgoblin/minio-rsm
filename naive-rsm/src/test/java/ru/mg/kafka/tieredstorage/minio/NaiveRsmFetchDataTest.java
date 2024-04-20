@@ -26,9 +26,7 @@ import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadataUpdate
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentState;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
-import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
-import ru.mg.kafka.tieredstorage.minio.io.Fetcher;
-import ru.mg.kafka.tieredstorage.minio.io.Writer;
+import ru.mg.kafka.tieredstorage.backend.IFetcher;
 import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
 
 import org.junit.jupiter.api.Test;
@@ -41,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -59,12 +56,9 @@ public class NaiveRsmFetchDataTest {
 
     @Test
     public void testFetchSegmentFromStartPosition() throws Exception {
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
+        final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG));
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -83,7 +77,7 @@ public class NaiveRsmFetchDataTest {
                             0
                     ));
 
-            when(ioFetcherMock.fetchLogSegmentData(any(), eq(0)))
+            when(backendMock.fetcher().fetchLogSegmentData(any(), eq(0)))
                     .thenReturn(InputStream.nullInputStream());
 
 
@@ -92,7 +86,7 @@ public class NaiveRsmFetchDataTest {
                     0);
             assertNotNull(result);
 
-            final Fetcher verify = verify(ioFetcherMock, times(1));
+            final IFetcher verify = verify(backendMock.fetcher(), times(1));
             try (final var fetch = verify.fetchLogSegmentData(any(), eq(0))) {
                 assertNull(fetch);
             }
@@ -101,12 +95,9 @@ public class NaiveRsmFetchDataTest {
 
     @Test
     public void testFetchLogSegmentFromStartPositionEmptyMetadata() {
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
+        final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG));
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -127,12 +118,9 @@ public class NaiveRsmFetchDataTest {
 
     @Test
     public void testFetchLogSegmentFromStartPositionWithNoCopySegmentFlagMetadata() {
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
+        final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG));
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -157,10 +145,7 @@ public class NaiveRsmFetchDataTest {
 
     @Test
     public void testFetchSegmentDataOnException() throws Exception {
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
-
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG));
+        final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
         final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
 
@@ -178,15 +163,15 @@ public class NaiveRsmFetchDataTest {
                         0
                 ));
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-            when(ioFetcherMock.fetchLogSegmentData(any(), any(Integer.class), any(Integer.class)))
+            when(backendMock.fetcher().fetchLogSegmentData(any(), any(Integer.class), any(Integer.class)))
                     .thenAnswer(invocation -> {
                         throw new RemoteStorageException("");
                     });
 
-            when(ioFetcherMock.fetchLogSegmentData(any(), eq(0)))
+            when(backendMock.fetcher().fetchLogSegmentData(any(), eq(0)))
                     .thenAnswer(invocation -> {
                         throw new RemoteStorageException("");
                     });
@@ -201,12 +186,9 @@ public class NaiveRsmFetchDataTest {
 
     @Test
     public void testFetchSegmentFromStartAndEndPosition() throws Exception {
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
+        final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG));
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -225,7 +207,7 @@ public class NaiveRsmFetchDataTest {
                             0
                     ));
 
-            when(ioFetcherMock.fetchLogSegmentData(any(), anyInt(), anyInt()))
+            when(backendMock.fetcher().fetchLogSegmentData(any(), anyInt(), anyInt()))
                     .thenReturn(InputStream.nullInputStream());
 
 
@@ -235,7 +217,7 @@ public class NaiveRsmFetchDataTest {
                     1000);
             assertNotNull(result);
 
-            final Fetcher verify = verify(ioFetcherMock, times(1));
+            final IFetcher verify = verify(backendMock.fetcher(), times(1));
             try (final var fetch = verify.fetchLogSegmentData(any(), eq(0), eq(1000))) {
                 assertNull(fetch);
             }
@@ -244,12 +226,9 @@ public class NaiveRsmFetchDataTest {
 
     @Test
     public void testFetchLogSegmentFromStartToEndPositionEmptyMetadata() {
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
+        final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG));
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -270,12 +249,9 @@ public class NaiveRsmFetchDataTest {
 
     @Test
     public void testFetchLogSegmentFromStartToEndPositionWithNoCopySegmentFlagMetadata() {
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
+        final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG));
-
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();

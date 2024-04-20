@@ -18,18 +18,12 @@ package ru.mg.kafka.tieredstorage.minio;
 
 import java.util.Map;
 
-import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
-import ru.mg.kafka.tieredstorage.minio.io.Fetcher;
-import ru.mg.kafka.tieredstorage.minio.io.Writer;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class NaiveRsmInitTest {
@@ -42,8 +36,6 @@ public class NaiveRsmInitTest {
 
     @Test
     public void testUninitializedAfterClose() {
-        final var ioWriterMock = mock(Writer.class);
-        final var ioFetcherMock = mock(Fetcher.class);
 
         final var cfg = Map.of(
                 "minio.url", "http://0.0.0.0",
@@ -51,9 +43,10 @@ public class NaiveRsmInitTest {
                 "minio.secret.key", "secret key",
                 "minio.auto.create.bucket", false
         );
-        when(ioFetcherMock.getConfig()).thenReturn(new ConnectionConfig(cfg));
 
-        try (var remoteStorageManager = new NaiveRemoteStorageManager(ioWriterMock, ioFetcherMock)) {
+        final var backendMock = new MockedBackend(cfg);
+
+        try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             remoteStorageManager.configure(cfg);
 
             assertTrue(remoteStorageManager.isInitialized());

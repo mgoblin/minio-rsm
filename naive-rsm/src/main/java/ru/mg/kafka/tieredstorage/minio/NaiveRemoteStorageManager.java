@@ -29,9 +29,12 @@ import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
 import org.apache.kafka.server.log.remote.storage.RemoteResourceNotFoundException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
+import ru.mg.kafka.tieredstorage.backend.RemoteStorageBackend;
+import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 import ru.mg.kafka.tieredstorage.minio.io.Fetcher;
+import ru.mg.kafka.tieredstorage.minio.io.MinioS3Backend;
 import ru.mg.kafka.tieredstorage.minio.io.RecoverableConfigurationFailException;
-import ru.mg.kafka.tieredstorage.minio.io.Writer;
+import ru.mg.kafka.tieredstorage.minio.io.Uploader;
 import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
 import ru.mg.kafka.tieredstorage.minio.metadata.MetadataUtils;
 
@@ -51,7 +54,7 @@ import org.slf4j.LoggerFactory;
  *     the initialization.
  * </p>
  * <p>
- *  *     Delegates writing Kafka log segments to Minio S3 to {@link Writer} and fetching to
+ *  *     Delegates writing Kafka log segments to Minio S3 to {@link Uploader} and fetching to
  *  * {@link Fetcher}.
  *  * </p>
  */
@@ -70,23 +73,19 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
     private Map<String, ?> configs;
 
-    private Writer ioWriter;
-    private Fetcher ioFetcher;
+    private RemoteStorageBackend backend;
 
     /**
      * For testing purposes
-     * @param ioWriter ioWriter mock
-     * @param ioFetcher ioFetcher mock
+     * @param backend backend mock
      */
-    NaiveRemoteStorageManager(final Writer ioWriter, final Fetcher ioFetcher) {
-        this(ioWriter, ioFetcher, true);
+    NaiveRemoteStorageManager(final RemoteStorageBackend backend) {
+        this(backend, true);
     }
 
-    private NaiveRemoteStorageManager(final Writer ioWriter, final Fetcher ioFetcher, final boolean initialized) {
-        Objects.requireNonNull(ioWriter);
-        Objects.requireNonNull(ioFetcher);
-        this.ioWriter = ioWriter;
-        this.ioFetcher = ioFetcher;
+    private NaiveRemoteStorageManager(final RemoteStorageBackend backend, final boolean initialized) {
+        Objects.requireNonNull(backend);
+        this.backend = backend;
         this.initialized = initialized;
     }
 
@@ -103,13 +102,13 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
             log.debug("Remote log manager not initialized. Try to initialize.");
 
             if (this.configs == null) {
-                throw new RemoteStorageException("ensureInitialized should be called after confif");
+                throw new RemoteStorageException("ensureInitialized should be called after config");
             }
             configure(this.configs);
             log.info(
                     "Remote log manager {} initialized now with {}",
                     NaiveRemoteStorageManager.class.getName(),
-                    ioFetcher.getConfig().toString());
+                    backend.getConfig().toString());
         }
 
         log.trace("Finish ensuring {} initialized", NaiveRemoteStorageManager.class.getName());
@@ -138,23 +137,23 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         final var copyMetadata = new ByteEncodedMetadata();
 
 
-        final var isDataCopied = ioWriter.copySegmentData(
+        final var isDataCopied = backend.uploader().copySegmentData(
                 logSegmentData.logSegment(),
                 names.logSegmentObjectName());
         copyMetadata.setDataNotEmpty(isDataCopied);
 
-        final var isOffsetIndexCopied = ioWriter.copyOffsetIndex(
+        final var isOffsetIndexCopied = backend.uploader().copyOffsetIndex(
                 logSegmentData.offsetIndex(),
                 names.indexObjectName());
         copyMetadata.setIndexNotEmpty(isOffsetIndexCopied);
 
-        final var isTimeIndexCopied = ioWriter.copyTimeIndex(
+        final var isTimeIndexCopied = backend.uploader().copyTimeIndex(
                 logSegmentData.timeIndex(),
                 names.timeIndexObjectName());
         copyMetadata.setTimeIndexNotEmpty(isTimeIndexCopied);
 
         if (logSegmentData.transactionIndex().isPresent()) {
-            final var isTxnIndexCopied = ioWriter.copyTransactionalIndex(
+            final var isTxnIndexCopied = backend.uploader().copyTransactionalIndex(
                     logSegmentData.transactionIndex().get(),
                     names.transactionIndexObjectName());
             copyMetadata.setTransactionIndexNotEmpty(isTxnIndexCopied);
@@ -163,12 +162,12 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
             log.debug("Transactional index is empty, don't copy it");
         }
 
-        final var isProducerSnapshotCopied = ioWriter.copyProducerSnapshotIndex(
+        final var isProducerSnapshotCopied = backend.uploader().copyProducerSnapshotIndex(
                 logSegmentData.producerSnapshotIndex(),
                 names.producerSnapshotObjectName());
         copyMetadata.setProducerSnapshotIndexNotEmpty(isProducerSnapshotCopied);
 
-        final var isLeaderEpochCopied = ioWriter.copyLeaderEpochIndex(
+        final var isLeaderEpochCopied = backend.uploader().copyLeaderEpochIndex(
                 logSegmentData.leaderEpochIndex(),
                 names.leaderEpochObjectName());
         copyMetadata.setLeaderEpochIndexNotEmpty(isLeaderEpochCopied);
@@ -208,7 +207,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
         if (MetadataUtils.metadata(remoteLogSegmentMetadata).isDataNotEmpty()) {
             log.trace("Fetch from start {} metadata flag is set for log data", startPosition);
-            final InputStream inputStream = ioFetcher.fetchLogSegmentData(segmentObjectName, startPosition);
+            final InputStream inputStream = backend.fetcher().fetchLogSegmentData(segmentObjectName, startPosition);
             log.trace("Fetch log segment with metadata {} and segment from start position {} finished",
                     remoteLogSegmentMetadata,
                     startPosition);
@@ -252,7 +251,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
         if (MetadataUtils.metadata(remoteLogSegmentMetadata).isDataNotEmpty()) {
             log.trace("Fetch from start {} to end {} metadata flag is set for log data", startPosition, endPosition);
-            final InputStream inputStream = ioFetcher.fetchLogSegmentData(
+            final InputStream inputStream = backend.fetcher().fetchLogSegmentData(
                     segmentObjectName,
                     startPosition,
                     endPosition);
@@ -301,12 +300,13 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
         if (MetadataUtils.metadata(remoteLogSegmentMetadata).isIndexOfTypePresent(indexType)) {
             log.trace("Fetch index {} metadata flag is set", indexType);
-            final InputStream inputStream = ioFetcher.readIndex(indexObjectName, indexType);
+            final InputStream inputStream = backend.fetcher().readIndex(indexObjectName, indexType);
             log.trace("Fetch index with type {} and metadata {} finished", indexType, remoteLogSegmentMetadata);
             return inputStream;
         } else {
             log.debug("Fetch index {} from {} finished. Index have empty metadata flag", indexType, indexObjectName);
-            throw new RemoteResourceNotFoundException("Transactional index is not found");
+            throw new RemoteResourceNotFoundException(String.format(
+                    "Index %s for %s is not found because have empty metadata flag", indexType, indexObjectName));
         }
     }
 
@@ -348,7 +348,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         for (final String dataObjectName: segmentObjectNames) {
             log.trace("Delete {} file", dataObjectName);
 
-            ioFetcher.deleteSegmentObject(dataObjectName);
+            backend.deleter().deleteSegmentObject(dataObjectName);
         }
         log.debug("Delete log files {} finished", names.getBaseName());
     }
@@ -361,8 +361,7 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         log.trace("Closing RemoteStorageManager");
         if (initialized) {
             log.trace("Close initialized RemoteStorageManager.");
-            ioWriter = null;
-            ioFetcher = null;
+            backend = null;
             initialized = false;
         } else {
             log.trace("RemoteStorageManager is uninitialized. Close do nothing.");
@@ -384,26 +383,23 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         if (!initialized) {
             log.debug("Try to configure remote storage manager {}", NaiveRemoteStorageManager.class);
 
-            this.ioWriter = new Writer(configs);
-            this.ioFetcher = new Fetcher(configs);
+            this.backend = new MinioS3Backend(configs);
 
-            log.debug("Writer {} and Fetcher {} configuration success.",
-                    this.ioWriter.getClass(),
-                    this.ioFetcher.getClass());
+            log.debug("Backend {} configuration success.",
+                    this.backend.getClass());
         }
 
         try {
-            ioWriter.tryToMakeBucket();
+            backend.bucket().tryToMakeBucket();
 
             initialized = true;
             log.info(
                     "Remote log manager {} initialized with {}",
                     NaiveRemoteStorageManager.class.getName(),
-                    this.ioFetcher.getConfig().toString());
+                    new ConnectionConfig(configs).originals());
 
         } catch (final RecoverableConfigurationFailException e) {
-            ioFetcher = null;
-            ioWriter = null;
+            backend = null;
             initialized = false;
             log.error("{} configuration failed. recoverable error occurred.",
                     NaiveRemoteStorageManager.class,

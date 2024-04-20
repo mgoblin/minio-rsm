@@ -30,8 +30,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.kafka.common.utils.ByteBufferInputStream;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
-import io.minio.BucketExistsArgs;
-import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.errors.ErrorResponseException;
@@ -41,13 +39,15 @@ import io.minio.errors.InvalidResponseException;
 import io.minio.errors.ServerException;
 import io.minio.errors.XmlParserException;
 
+import ru.mg.kafka.tieredstorage.backend.IUploader;
 import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Writer {
-    private static final Logger log = LoggerFactory.getLogger(Writer.class);
+//TODO Add unit tests
+public class Uploader implements IUploader {
+    private static final Logger log = LoggerFactory.getLogger(Uploader.class);
     private static final String CONTENT_TYPE = "application/binary";
     private static final int MIN_PART_SIZE = 5 * 1024 * 1024; // 5 MiB
     private final MinioClient minioClient;
@@ -58,8 +58,8 @@ public class Writer {
 
     private final ConnectionConfig config;
 
-    public Writer(final Map<String, ?> configs) {
-        this.config = new ConnectionConfig(configs);
+    public Uploader(final ConnectionConfig config) {
+        this.config = config;
         this.minioClient = MinioClient.builder()
                 .endpoint(config.getMinioS3EndpointUrl())
                 .credentials(config.getMinioAccessKey(), config.getMinioSecretKey().value())
@@ -202,30 +202,6 @@ public class Writer {
                 dstObjectName,
                 "leader epoch index");
         return true;
-    }
-
-    public void tryToMakeBucket() throws RecoverableConfigurationFailException {
-
-        try {
-            if (config != null && config.isAutoCreateBucket()) {
-                final boolean isBucketExists = minioClient.bucketExists(
-                        BucketExistsArgs.builder().bucket(config.getMinioBucketName()).build());
-
-                if (!isBucketExists) {
-                    minioClient.makeBucket(MakeBucketArgs.builder().bucket(config.getMinioBucketName()).build());
-                    log.debug("Bucket {} created", config.getMinioBucketName());
-                } else {
-                    log.debug("Bucket {} found", config.getMinioBucketName());
-                }
-            }
-        } catch (final IOException | ServerException | InternalException
-                       | InsufficientDataException | ErrorResponseException e) {
-            throw new RecoverableConfigurationFailException(e);
-        } catch (final NoSuchAlgorithmException | InvalidKeyException | InvalidResponseException
-                       | XmlParserException e) {
-            log.error("Unrecoverable initialization error", e);
-            throw new RuntimeException(e);
-        }
     }
 
 }
