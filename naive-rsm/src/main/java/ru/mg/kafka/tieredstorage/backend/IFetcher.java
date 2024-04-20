@@ -21,17 +21,45 @@ import java.io.InputStream;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
 
+// TODO clarify object not found in S3 storage case
+/**
+ * S3 fetcher interface. Fetches log segment data and indexes from S3 remote storage
+ */
 public interface IFetcher {
 
+    /**
+     * Fetches log segment data from S3 storage from start to end position.
+     *
+     * @param segmentObjectName - object name in S3 remote storage
+     * @param startPosition start position
+     * @param endPosition end position
+     * @return Input stream with segment data
+     * @throws RemoteStorageException on error
+     */
     InputStream fetchLogSegmentData(
             final String segmentObjectName,
             final int startPosition,
             final int endPosition) throws RemoteStorageException;
 
+    /**
+     * Fetches log segment data from S3 storage from start position to end of data
+     * @param segmentObjectName object name
+     * @param startPosition start position
+     * @return Input stream with segment data
+     * @throws RemoteStorageException on error
+     */
     InputStream fetchLogSegmentData(
             final String segmentObjectName,
             final int startPosition) throws RemoteStorageException;
 
+    /**
+     * Fetches index data from remote S3 storage.
+     *
+     * @param indexObjectName object name
+     * @param indexType index type
+     * @return Input stream with index data
+     * @throws RemoteStorageException on error
+     */
     InputStream readIndex(
             final String indexObjectName,
             final RemoteStorageManager.IndexType indexType)

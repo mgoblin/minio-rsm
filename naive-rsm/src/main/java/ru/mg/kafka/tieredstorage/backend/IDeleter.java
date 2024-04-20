@@ -18,6 +18,16 @@ package ru.mg.kafka.tieredstorage.backend;
 
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
+/**
+ * S3 deleter interface.
+ * Declares S3 remote storage deletion operations.
+ */
 public interface IDeleter {
+    /**
+     * Deletes object from remote S3 storage
+     *
+     * @param objectName objectName in S3 storage
+     * @throws RemoteStorageException on error
+     */
     void deleteSegmentObject(final String objectName) throws RemoteStorageException;
 }

@@ -18,6 +18,16 @@ package ru.mg.kafka.tieredstorage.backend;
 
 import ru.mg.kafka.tieredstorage.minio.io.RecoverableConfigurationFailException;
 
+/**
+ * Bucket operations interface.
+ * Declare S3 bucket operations.
+ */
 public interface IBucket {
+    /**
+     * Try to make S3 bucket if not exists
+     *
+     * @throws RecoverableConfigurationFailException on recoverable errors.
+     *     If recoverable error occurred later will be another try.
+     */
     void tryToMakeBucket() throws RecoverableConfigurationFailException;
 }
