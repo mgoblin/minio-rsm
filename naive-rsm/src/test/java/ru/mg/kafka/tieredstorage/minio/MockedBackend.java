@@ -39,8 +39,8 @@ public class MockedBackend implements RemoteStorageBackend {
     private final Fetcher fetcher = mock(Fetcher.class);
     private final Deleter deleter = mock(Deleter.class);
 
-    public MockedBackend(final Map<String, ?> confgis) {
-        this.config = new ConnectionConfig(confgis);
+    public MockedBackend(final Map<String, ?> configs) {
+        this.config = new ConnectionConfig(configs);
     }
 
     @Override

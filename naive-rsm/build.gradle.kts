@@ -11,7 +11,7 @@ plugins {
 
 val minioSdkVersion by extra { "8.5.7" }
 val apacheCommonsLangVersion by extra { "3.13.0" }
-val apacheCommonsValidatorVersion by extra { "1.7" }
+val apacheCommonsValidatorVersion by extra { "1.8.0" }
 val apacheCommonsIOVersion by extra { "2.15.0" }
 val kafkaVersion by extra { "3.7.0" }
 val slf4jVersion by extra { "1.7.36" }

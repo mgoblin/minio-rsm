@@ -40,7 +40,7 @@ import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
  *
  * <p>bit 6 - leader-epoch checkpoint
  *
- * <p>Setting the bit to 1 means that copy was successful, otherwise data is not copied (absent in Kafla local
+ * <p>Setting the bit to 1 means that copy was successful, otherwise data is not copied (absent in Kafka local
  * filesystem or error on copy occurred)
  */
 public final class ByteEncodedMetadata {
@@ -145,7 +145,7 @@ public final class ByteEncodedMetadata {
             case PRODUCER_SNAPSHOT -> isProducerSnapshotIndexNotEmpty();
             case TRANSACTION -> isTransactionIndexNotEmpty();
             case LEADER_EPOCH -> isLeaderEpochIndexNotEmpty();
-            case null, default -> throw new IllegalArgumentException("index type should be not null");
+            case null -> throw new IllegalArgumentException("index type should be not null");
         };
     }
 

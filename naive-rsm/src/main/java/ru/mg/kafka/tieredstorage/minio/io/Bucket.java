@@ -51,7 +51,7 @@ public class Bucket extends BackendPart implements IBucket {
     }
 
     /**
-     * Create bucket if does not exist
+     * Create bucket if it does not exist
      *
      * @throws RecoverableConfigurationFailException on recoverable error
      */
