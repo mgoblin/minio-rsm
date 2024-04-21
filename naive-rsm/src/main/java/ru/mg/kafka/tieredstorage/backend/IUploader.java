@@ -21,7 +21,6 @@ import java.nio.file.Path;
 
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
-//TODO Remove boolean from method signatures
 /**
  * S3 uploader interface. Upload data and indexes to remote S3 storage.
  */
@@ -32,10 +31,9 @@ public interface IUploader {
      *
      * @param srcPath path to source local segment file
      * @param dstObjectName S3 remote storage destination objectName
-     * @return true on success
      * @throws RemoteStorageException on error
      */
-    boolean copySegmentData(
+    void copySegmentData(
             final Path srcPath,
             final String dstObjectName)
             throws RemoteStorageException;
@@ -45,10 +43,9 @@ public interface IUploader {
      *
      * @param srcPath path to source local index file
      * @param dstObjectName S3 remote storage destination objectName
-     * @return true on success
      * @throws RemoteStorageException on error
      */
-    boolean copyOffsetIndex(
+    void copyOffsetIndex(
             final Path srcPath,
             final String dstObjectName)
             throws RemoteStorageException;
@@ -58,10 +55,9 @@ public interface IUploader {
      *
      * @param srcPath path to source local index file
      * @param dstObjectName S3 remote storage destination objectName
-     * @return true on success
      * @throws RemoteStorageException on error
      */
-    boolean copyTimeIndex(
+    void copyTimeIndex(
             final Path srcPath,
             final String dstObjectName)
             throws RemoteStorageException;
@@ -71,10 +67,9 @@ public interface IUploader {
      *
      * @param srcPath path to source local index file
      * @param dstObjectName S3 remote storage destination objectName
-     * @return true on success
      * @throws RemoteStorageException on error
      */
-    boolean copyTransactionalIndex(
+    void copyTransactionalIndex(
             final Path srcPath,
             final String dstObjectName)
             throws RemoteStorageException;
@@ -84,10 +79,9 @@ public interface IUploader {
      *
      * @param srcPath path to source local index file
      * @param dstObjectName S3 remote storage destination objectName
-     * @return true on success
      * @throws RemoteStorageException on error
      */
-    boolean copyProducerSnapshotIndex(
+    void copyProducerSnapshotIndex(
             final Path srcPath,
             final String dstObjectName)
             throws RemoteStorageException;
@@ -97,10 +91,9 @@ public interface IUploader {
      *
      * @param data index data byte buffer
      * @param dstObjectName S3 remote storage destination objectName
-     * @return true on success
      * @throws RemoteStorageException on error
      */
-    boolean copyLeaderEpochIndex(
+    void copyLeaderEpochIndex(
             final ByteBuffer data,
             final String dstObjectName)
             throws RemoteStorageException;

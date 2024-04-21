@@ -41,4 +41,20 @@ public interface LogSegmentDataUtils {
                 leaderEpochIndex);
     }
 
+    static LogSegmentData logSegmentDataWithoutTrnIndex() {
+        final var logSegment = Path.of("./src/test/testData/test.log").normalize().toAbsolutePath();
+        final var offsetIndex = Path.of("./src/test/testData/test.index");
+        final var timeIndex = Path.of("./src/test/testData/test.timeindex");
+        final Optional<Path> transactionalIndex = Optional.empty();
+        final var producerSnapshotIndex = Path.of("./src/test/testData/test.snapshot");
+        final var leaderEpochIndex = ByteBuffer.allocate(0);
+
+        return new LogSegmentData(
+                logSegment,
+                offsetIndex,
+                timeIndex,
+                transactionalIndex,
+                producerSnapshotIndex,
+                leaderEpochIndex);
+    }
 }

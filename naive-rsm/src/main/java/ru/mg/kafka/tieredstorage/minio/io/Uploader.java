@@ -143,17 +143,15 @@ public class Uploader extends BackendPart implements IUploader {
      *
      * @param srcPath path to source local segment file
      * @param dstObjectName S3 remote storage destination objectName
-     * @return true on success
      * @throws RemoteStorageException on error
      */
-    public boolean copySegmentData(final Path srcPath, final String dstObjectName)
+    public void copySegmentData(final Path srcPath, final String dstObjectName)
             throws RemoteStorageException {
         writeFileByPathToMinio(
                 srcPath,
                 config.getMinioBucketName(),
                 dstObjectName,
                 "segment data");
-        return true;
     }
 
     /**
@@ -161,34 +159,30 @@ public class Uploader extends BackendPart implements IUploader {
      *
      * @param srcPath path to source local index file
      * @param dstObjectName S3 remote storage destination objectName
-     * @return true on success
      * @throws RemoteStorageException on error
      */
-    public boolean copyOffsetIndex(final Path srcPath, final String dstObjectName)
+    public void copyOffsetIndex(final Path srcPath, final String dstObjectName)
             throws RemoteStorageException {
         writeFileByPathToMinio(
                 srcPath,
                 config.getMinioBucketName(),
                 dstObjectName,
                 "offset index");
-        return true;
     }
 
     /**
      * Copies time index from local filesystem to Minio
      * @param srcPath path to source local index file
      * @param dstObjectName S3 remote storage destination objectName
-     * @return true on success
      * @throws RemoteStorageException on error
      */
-    public boolean copyTimeIndex(final Path srcPath, final String dstObjectName)
+    public void copyTimeIndex(final Path srcPath, final String dstObjectName)
             throws RemoteStorageException {
         writeFileByPathToMinio(
                 srcPath,
                 config.getMinioBucketName(),
                 dstObjectName,
                 "time index");
-        return true;
     }
 
     /**
@@ -196,17 +190,15 @@ public class Uploader extends BackendPart implements IUploader {
      *
      * @param srcPath path to source local index file
      * @param dstObjectName S3 remote storage destination objectName
-     * @return true on success
      * @throws RemoteStorageException on error
      */
-    public boolean copyTransactionalIndex(final Path srcPath, final String dstObjectName)
+    public void copyTransactionalIndex(final Path srcPath, final String dstObjectName)
             throws RemoteStorageException {
         writeFileByPathToMinio(
                 srcPath,
                 config.getMinioBucketName(),
                 dstObjectName,
                 "transactional index");
-        return true;
     }
 
     /**
@@ -214,17 +206,15 @@ public class Uploader extends BackendPart implements IUploader {
      *
      * @param srcPath path to source local index file
      * @param dstObjectName S3 remote storage destination objectName
-     * @return true on success
      * @throws RemoteStorageException on error
      */
-    public boolean copyProducerSnapshotIndex(final Path srcPath, final String dstObjectName)
+    public void copyProducerSnapshotIndex(final Path srcPath, final String dstObjectName)
             throws RemoteStorageException {
         writeFileByPathToMinio(
                 srcPath,
                 config.getMinioBucketName(),
                 dstObjectName,
                 "producer snapshot index");
-        return true;
     }
 
     /**
@@ -232,17 +222,15 @@ public class Uploader extends BackendPart implements IUploader {
      *
      * @param data index data byte buffer
      * @param dstObjectName S3 remote storage destination objectName
-     * @return on success
      * @throws RemoteStorageException on error
      */
-    public boolean copyLeaderEpochIndex(final ByteBuffer data,  final String dstObjectName)
+    public void copyLeaderEpochIndex(final ByteBuffer data,  final String dstObjectName)
             throws RemoteStorageException {
         writeByteBufferToMinio(
                 data,
                 config.getMinioBucketName(),
                 dstObjectName,
                 "leader epoch index");
-        return true;
     }
 
 }

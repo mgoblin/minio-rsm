@@ -31,9 +31,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class NaiveRsmCopyTest {
@@ -52,13 +52,6 @@ public class NaiveRsmCopyTest {
 
         try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
-
-            when(backendMock.uploader().copySegmentData(any(), any())).thenReturn(true);
-            when(backendMock.uploader().copyOffsetIndex(any(), any())).thenReturn(true);
-            when(backendMock.uploader().copyLeaderEpochIndex(any(), any())).thenReturn(true);
-            when(backendMock.uploader().copyProducerSnapshotIndex(any(), any())).thenReturn(true);
-            when(backendMock.uploader().copyTransactionalIndex(any(), any())).thenReturn(true);
-            when(backendMock.uploader().copyTimeIndex(any(), any())).thenReturn(true);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
             final var logSegmentData = LogSegmentDataUtils.logSegmentData();
@@ -96,14 +89,8 @@ public class NaiveRsmCopyTest {
         try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-            when(backendMock.uploader().copySegmentData(any(), any())).thenReturn(true);
-            when(backendMock.uploader().copyOffsetIndex(any(), any())).thenReturn(true);
-            when(backendMock.uploader().copyLeaderEpochIndex(any(), any())).thenReturn(true);
-            when(backendMock.uploader().copyProducerSnapshotIndex(any(), any())).thenReturn(true);
-            when(backendMock.uploader().copyTimeIndex(any(), any())).thenReturn(true);
-
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
-            final var logSegmentData = LogSegmentDataUtils.logSegmentData();
+            final var logSegmentData = LogSegmentDataUtils.logSegmentDataWithoutTrnIndex();
 
             final var customMetadataActual = remoteStorageManager.copyLogSegmentData(
                     remoteLogSegmentMetadata,
@@ -138,10 +125,8 @@ public class NaiveRsmCopyTest {
         try (var remoteStorageManager = new NaiveRemoteStorageManager(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-            when(backendMock.uploader().copySegmentData(any(), any()))
-                    .thenAnswer(invocation -> {
-                        throw new RemoteStorageException("");
-                    });
+            doThrow(RemoteStorageException.class)
+                    .when(backendMock.uploader()).copySegmentData(any(), any());
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
             final var logSegmentData = LogSegmentDataUtils.logSegmentData();

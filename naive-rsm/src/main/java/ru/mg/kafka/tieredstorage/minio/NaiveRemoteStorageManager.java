@@ -137,40 +137,40 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
         final var copyMetadata = new ByteEncodedMetadata();
 
 
-        final var isDataCopied = backend.uploader().copySegmentData(
+        backend.uploader().copySegmentData(
                 logSegmentData.logSegment(),
                 names.logSegmentObjectName());
-        copyMetadata.setDataNotEmpty(isDataCopied);
+        copyMetadata.setDataNotEmpty(true);
 
-        final var isOffsetIndexCopied = backend.uploader().copyOffsetIndex(
+        backend.uploader().copyOffsetIndex(
                 logSegmentData.offsetIndex(),
                 names.indexObjectName());
-        copyMetadata.setIndexNotEmpty(isOffsetIndexCopied);
+        copyMetadata.setIndexNotEmpty(true);
 
-        final var isTimeIndexCopied = backend.uploader().copyTimeIndex(
+        backend.uploader().copyTimeIndex(
                 logSegmentData.timeIndex(),
                 names.timeIndexObjectName());
-        copyMetadata.setTimeIndexNotEmpty(isTimeIndexCopied);
+        copyMetadata.setTimeIndexNotEmpty(true);
 
         if (logSegmentData.transactionIndex().isPresent()) {
-            final var isTxnIndexCopied = backend.uploader().copyTransactionalIndex(
+            backend.uploader().copyTransactionalIndex(
                     logSegmentData.transactionIndex().get(),
                     names.transactionIndexObjectName());
-            copyMetadata.setTransactionIndexNotEmpty(isTxnIndexCopied);
+            copyMetadata.setTransactionIndexNotEmpty(true);
         } else {
             copyMetadata.setTransactionIndexNotEmpty(false);
             log.debug("Transactional index is empty, don't copy it");
         }
 
-        final var isProducerSnapshotCopied = backend.uploader().copyProducerSnapshotIndex(
+        backend.uploader().copyProducerSnapshotIndex(
                 logSegmentData.producerSnapshotIndex(),
                 names.producerSnapshotObjectName());
-        copyMetadata.setProducerSnapshotIndexNotEmpty(isProducerSnapshotCopied);
+        copyMetadata.setProducerSnapshotIndexNotEmpty(true);
 
-        final var isLeaderEpochCopied = backend.uploader().copyLeaderEpochIndex(
+        backend.uploader().copyLeaderEpochIndex(
                 logSegmentData.leaderEpochIndex(),
                 names.leaderEpochObjectName());
-        copyMetadata.setLeaderEpochIndexNotEmpty(isLeaderEpochCopied);
+        copyMetadata.setLeaderEpochIndexNotEmpty(true);
 
         log.trace("Metadata bitmap is {} for {}", new byte[]{copyMetadata.getByteValue()}, names.getBaseName());
         final var customMetadata = MetadataUtils.customMetadata(copyMetadata.getByteValue());
