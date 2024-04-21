@@ -25,6 +25,9 @@ import ru.mg.kafka.tieredstorage.backend.IUploader;
 import ru.mg.kafka.tieredstorage.backend.RemoteStorageBackend;
 import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 
+/**
+ * Minio backend implementation
+ */
 public class MinioS3Backend implements RemoteStorageBackend {
 
     private final ConnectionConfig config;
@@ -33,6 +36,11 @@ public class MinioS3Backend implements RemoteStorageBackend {
     private final Uploader uploader;
     private final Bucket bucket;
 
+    /**
+     * Parse and store configuration, then create uploader, fetcher, deleter and bucket
+     *
+     * @param configs configuration map
+     */
     public MinioS3Backend(final Map<String, ?> configs) {
         this.config = new ConnectionConfig(configs);
         this.deleter = new Deleter(config);

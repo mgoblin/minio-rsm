@@ -21,6 +21,7 @@ import java.nio.file.Path;
 
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
+//TODO Remove boolean from method signatures
 /**
  * S3 uploader interface. Upload data and indexes to remote S3 storage.
  */

@@ -28,7 +28,6 @@ import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
 
 import io.minio.GetObjectArgs;
-import io.minio.MinioClient;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
 import io.minio.errors.InternalException;
@@ -43,26 +42,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 //TODO Add unit tests
-public class Fetcher implements IFetcher {
+
+/**
+ * Fetcher implementation for Minio S3
+ *
+ * @see IFetcher
+ * @see ru.mg.kafka.tieredstorage.backend.RemoteStorageBackend
+ */
+public class Fetcher extends BackendPart implements IFetcher {
     private static final Logger log = LoggerFactory.getLogger(Fetcher.class);
 
-    private final MinioClient minioClient;
-
-    public ConnectionConfig getConfig() {
-        return config;
-    }
-
-    private final ConnectionConfig config;
-
     public Fetcher(final ConnectionConfig config) {
-        this.config = config;
-        this.minioClient = MinioClient.builder()
-                .endpoint(config.getMinioS3EndpointUrl())
-                .credentials(config.getMinioAccessKey(), config.getMinioSecretKey().value())
-                .build();
+        super(config);
     }
 
-    public byte[] fetchAllSegmentDataBytes(final String segmentObjectName) throws RemoteStorageException {
+    /**
+     * Fetches all bytes from S3 object
+     *
+     * @param segmentObjectName object name
+     * @return byte array with data
+     * @throws RemoteStorageException on error
+     */
+    public byte[] fetchAllBytes(final String segmentObjectName) throws RemoteStorageException {
         try {
             final var response = minioClient.getObject(
                     GetObjectArgs.builder()
@@ -72,7 +73,7 @@ public class Fetcher implements IFetcher {
 
             final byte[] body = response.readAllBytes();
 
-            log.debug("Fetch log segment data from path {} success. "
+            log.debug("Fetch bytes from path {} success. "
                             + "Fetched {} bytes.",
                     segmentObjectName,
                     body.length);
@@ -107,22 +108,27 @@ public class Fetcher implements IFetcher {
         }
     }
 
+    /**
+     * Fetchers log segment data from S3  from start to end position
+     *
+     * @param segmentObjectName - object name in S3 remote storage
+     * @param startPosition start position
+     * @param endPosition end position
+     * @return log segment input stream
+     * @throws RemoteStorageException on error
+     */
     public InputStream fetchLogSegmentData(
             final String segmentObjectName,
             final int startPosition,
             final int endPosition) throws RemoteStorageException {
 
-        final byte[] body = fetchAllSegmentDataBytes(segmentObjectName);
-
-        log.debug("Fetch log segment data from path {} success. "
-                        + "Fetched {} bytes.",
-                segmentObjectName,
-                body.length);
+        final byte[] body = fetchAllBytes(segmentObjectName);
 
         final byte[] subArray = Arrays.copyOfRange(body, startPosition, endPosition);
-        log.debug("Fetch log segment data from start position {} with path {} success. "
+        log.debug("Fetch log segment data from start and end positions {} - {} with path {} success. "
                         + "Fetched {} bytes, trimmed to {}.",
                 startPosition,
+                endPosition,
                 segmentObjectName,
                 body.length,
                 subArray.length);
@@ -130,16 +136,19 @@ public class Fetcher implements IFetcher {
         return new ByteArrayInputStream(subArray);
     }
 
+    /**
+     * Fetches log segment data from Minio S3 from start position
+     *
+     * @param segmentObjectName object name
+     * @param startPosition start position
+     * @return log segment input stream
+     * @throws RemoteStorageException on error
+     */
     public InputStream fetchLogSegmentData(
             final String segmentObjectName,
             final int startPosition) throws RemoteStorageException {
 
-        final byte[] body = fetchAllSegmentDataBytes(segmentObjectName);
-
-        log.debug("Fetch log segment data from path {} success. "
-                        + "Fetched {} bytes.",
-                segmentObjectName,
-                body.length);
+        final byte[] body = fetchAllBytes(segmentObjectName);
 
         final byte[] subArray = Arrays.copyOfRange(body, startPosition, body.length);
         log.debug("Fetch log segment data from start position {} with path {} success. "
@@ -152,6 +161,14 @@ public class Fetcher implements IFetcher {
         return new ByteArrayInputStream(subArray);
     }
 
+    /**
+     * Fetches index by type from S3 Minio
+     *
+     * @param indexObjectName object name
+     * @param indexType index type
+     * @return index data input stream
+     * @throws RemoteStorageException on error
+     */
     public InputStream readIndex(final String indexObjectName, final RemoteStorageManager.IndexType indexType)
             throws RemoteStorageException {
 

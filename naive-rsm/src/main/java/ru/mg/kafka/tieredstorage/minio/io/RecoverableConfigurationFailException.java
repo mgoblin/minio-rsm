@@ -16,7 +16,13 @@
 
 package ru.mg.kafka.tieredstorage.minio.io;
 
+/**
+ * Class of recoverable error during configuration.
+ *
+ * <p>Config call can be retried</p>
+ */
 public class RecoverableConfigurationFailException extends Exception {
+
     public RecoverableConfigurationFailException(final Throwable cause) {
         super(cause);
     }

@@ -23,14 +23,12 @@ import java.nio.file.Path;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 
 import org.apache.kafka.common.utils.ByteBufferInputStream;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
-import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
@@ -46,24 +44,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 //TODO Add unit tests
-public class Uploader implements IUploader {
+
+/**
+ * Uploader implementation for Minio S3
+ *
+ * @see IUploader
+ * @see ru.mg.kafka.tieredstorage.backend.RemoteStorageBackend
+ */
+public class Uploader extends BackendPart implements IUploader {
     private static final Logger log = LoggerFactory.getLogger(Uploader.class);
     private static final String CONTENT_TYPE = "application/binary";
     private static final int MIN_PART_SIZE = 5 * 1024 * 1024; // 5 MiB
-    private final MinioClient minioClient;
-
-    public ConnectionConfig getConfig() {
-        return config != null ? config : new ConnectionConfig(Map.of());
-    }
-
-    private final ConnectionConfig config;
 
     public Uploader(final ConnectionConfig config) {
-        this.config = config;
-        this.minioClient = MinioClient.builder()
-                .endpoint(config.getMinioS3EndpointUrl())
-                .credentials(config.getMinioAccessKey(), config.getMinioSecretKey().value())
-                .build();
+        super(config);
     }
 
     private void writeFileByPathToMinio(
@@ -144,6 +138,14 @@ public class Uploader implements IUploader {
         }
     }
 
+    /**
+     * Copies segment data from local filesystem to Minio S3
+     *
+     * @param srcPath path to source local segment file
+     * @param dstObjectName S3 remote storage destination objectName
+     * @return true on success
+     * @throws RemoteStorageException on error
+     */
     public boolean copySegmentData(final Path srcPath, final String dstObjectName)
             throws RemoteStorageException {
         writeFileByPathToMinio(
@@ -154,6 +156,14 @@ public class Uploader implements IUploader {
         return true;
     }
 
+    /**
+     * Copies offset index from local filesystem to Minio
+     *
+     * @param srcPath path to source local index file
+     * @param dstObjectName S3 remote storage destination objectName
+     * @return true on success
+     * @throws RemoteStorageException on error
+     */
     public boolean copyOffsetIndex(final Path srcPath, final String dstObjectName)
             throws RemoteStorageException {
         writeFileByPathToMinio(
@@ -164,6 +174,13 @@ public class Uploader implements IUploader {
         return true;
     }
 
+    /**
+     * Copies time index from local filesystem to Minio
+     * @param srcPath path to source local index file
+     * @param dstObjectName S3 remote storage destination objectName
+     * @return true on success
+     * @throws RemoteStorageException on error
+     */
     public boolean copyTimeIndex(final Path srcPath, final String dstObjectName)
             throws RemoteStorageException {
         writeFileByPathToMinio(
@@ -174,6 +191,14 @@ public class Uploader implements IUploader {
         return true;
     }
 
+    /**
+     * Copies transactional index from local filesystem to Minio
+     *
+     * @param srcPath path to source local index file
+     * @param dstObjectName S3 remote storage destination objectName
+     * @return true on success
+     * @throws RemoteStorageException on error
+     */
     public boolean copyTransactionalIndex(final Path srcPath, final String dstObjectName)
             throws RemoteStorageException {
         writeFileByPathToMinio(
@@ -184,6 +209,14 @@ public class Uploader implements IUploader {
         return true;
     }
 
+    /**
+     * Copies producer snapshot index from local filesystem to Minio
+     *
+     * @param srcPath path to source local index file
+     * @param dstObjectName S3 remote storage destination objectName
+     * @return true on success
+     * @throws RemoteStorageException on error
+     */
     public boolean copyProducerSnapshotIndex(final Path srcPath, final String dstObjectName)
             throws RemoteStorageException {
         writeFileByPathToMinio(
@@ -194,6 +227,14 @@ public class Uploader implements IUploader {
         return true;
     }
 
+    /**
+     * Copies leader epoch index from local filesystem to Minio
+     *
+     * @param data index data byte buffer
+     * @param dstObjectName S3 remote storage destination objectName
+     * @return on success
+     * @throws RemoteStorageException on error
+     */
     public boolean copyLeaderEpochIndex(final ByteBuffer data,  final String dstObjectName)
             throws RemoteStorageException {
         writeByteBufferToMinio(

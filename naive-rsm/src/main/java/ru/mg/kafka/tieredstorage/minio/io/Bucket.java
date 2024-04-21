@@ -23,7 +23,6 @@ import java.security.NoSuchAlgorithmException;
 
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
-import io.minio.MinioClient;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
 import io.minio.errors.InternalException;
@@ -37,25 +36,29 @@ import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Bucket implements IBucket {
+/**
+ * Bucket manipulator implementation for Minio S3
+ *
+ * @see IBucket
+ * @see ru.mg.kafka.tieredstorage.backend.RemoteStorageBackend
+ */
+public class Bucket extends BackendPart implements IBucket {
 
     private static final Logger log = LoggerFactory.getLogger(Bucket.class);
 
-    private final MinioClient minioClient;
-    private final ConnectionConfig config;
-
     public Bucket(final ConnectionConfig config) {
-        this.config = config;
-        this.minioClient = MinioClient.builder()
-                .endpoint(config.getMinioS3EndpointUrl())
-                .credentials(config.getMinioAccessKey(), config.getMinioSecretKey().value())
-                .build();
+        super(config);
     }
 
+    /**
+     * Create bucket if does not exist
+     *
+     * @throws RecoverableConfigurationFailException on recoverable error
+     */
     @Override
     public void tryToMakeBucket() throws RecoverableConfigurationFailException {
         try {
-            if (config != null && config.isAutoCreateBucket()) {
+            if (config.isAutoCreateBucket()) {
                 final boolean isBucketExists = minioClient.bucketExists(
                         BucketExistsArgs.builder().bucket(config.getMinioBucketName()).build());
 
@@ -63,7 +66,7 @@ public class Bucket implements IBucket {
                     minioClient.makeBucket(MakeBucketArgs.builder().bucket(config.getMinioBucketName()).build());
                     log.debug("Bucket {} created", config.getMinioBucketName());
                 } else {
-                    log.debug("Bucket {} found", config.getMinioBucketName());
+                    log.debug("Bucket {} already exists", config.getMinioBucketName());
                 }
             }
         } catch (final IOException | ServerException | InternalException
