@@ -41,10 +41,7 @@ import ru.mg.kafka.tieredstorage.minio.metadata.MetadataUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO Update unit tests - add fixtures
 // TODO Add integration tests
-// TODO Clarify multiple delete leader epoch file
-
 /**
  * Straightforward Kafka RemoteStorageManager implementation with Minio S3
  * as tiered storage
@@ -335,7 +332,8 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                 names.indexObjectName(), metadata.isIndexNotEmpty(),
                 names.timeIndexObjectName(), metadata.isTimeIndexNotEmpty(),
                 names.transactionIndexObjectName(), metadata.isTransactionIndexNotEmpty(),
-                names.producerSnapshotObjectName(), metadata.isProducerSnapshotIndexNotEmpty()
+                names.producerSnapshotObjectName(), metadata.isProducerSnapshotIndexNotEmpty(),
+                names.leaderEpochObjectName(), metadata.isLeaderEpochIndexNotEmpty()
         );
         final List<String> segmentObjectNames = namesWithMetadata.entrySet().stream()
                 .filter(Map.Entry::getValue)

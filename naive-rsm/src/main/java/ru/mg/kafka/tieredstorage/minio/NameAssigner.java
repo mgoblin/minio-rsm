@@ -130,7 +130,7 @@ public class NameAssigner {
      * @return name as /[topic name]-[partition]/leader-epoch-checkpoint
      */
     public String leaderEpochObjectName() {
-        return String.format("/%s-%d/leader-epoch-checkpoint", topicName, partition);
+        return String.format("%s-leader-epoch-checkpoint", baseName);
     }
 
     /**

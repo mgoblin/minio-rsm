@@ -109,7 +109,7 @@ class NameAssignerTest {
                 names.indexNameByType(RemoteStorageManager.IndexType.PRODUCER_SNAPSHOT));
 
         assertEquals(
-                "/tieredTopic-0/leader-epoch-checkpoint",
+                "/tieredTopic-0/00000000000000000000-leader-epoch-checkpoint",
                 names.indexNameByType(RemoteStorageManager.IndexType.LEADER_EPOCH));
 
         assertThrows(IllegalArgumentException.class, () -> names.indexNameByType(null));

@@ -78,7 +78,7 @@ public class NaiveRsmDeleteTest {
             doNothing().when(backendMock.deleter()).deleteSegmentObject(any());
 
             remoteStorageManager.deleteLogSegmentData(remoteLogSegmentMetadata1);
-            verify(backendMock.deleter(), times(5)).deleteSegmentObject(any());
+            verify(backendMock.deleter(), times(6)).deleteSegmentObject(any());
         }
     }
 }
