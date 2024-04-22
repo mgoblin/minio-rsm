@@ -38,10 +38,18 @@ public abstract class BackendPart {
 
     public BackendPart(final ConnectionConfig config) {
         Objects.requireNonNull(config, "Config should not be null");
+
         this.config = config;
         this.minioClient = MinioClient.builder()
                 .endpoint(config.getMinioS3EndpointUrl())
                 .credentials(config.getMinioAccessKey(), config.getMinioSecretKey().value())
                 .build();
+    }
+
+    // For testing
+    BackendPart(final ConnectionConfig config, final MinioClient minioClient) {
+        Objects.requireNonNull(minioClient);
+        this.config = config;
+        this.minioClient = minioClient;
     }
 }

@@ -23,6 +23,7 @@ import java.security.NoSuchAlgorithmException;
 
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
+import io.minio.MinioClient;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
 import io.minio.errors.InternalException;
@@ -48,6 +49,10 @@ public class Bucket extends BackendPart implements IBucket {
 
     public Bucket(final ConnectionConfig config) {
         super(config);
+    }
+
+    Bucket(final ConnectionConfig config, final MinioClient clientMock) {
+        super(config, clientMock);
     }
 
     /**
