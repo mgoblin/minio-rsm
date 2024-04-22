@@ -24,6 +24,7 @@ import java.security.NoSuchAlgorithmException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
 import io.minio.GetObjectArgs;
+import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
@@ -50,6 +51,10 @@ public class Deleter extends BackendPart implements IDeleter {
 
     public Deleter(final ConnectionConfig config) {
         super(config);
+    }
+
+    public Deleter(final ConnectionConfig config, final MinioClient client) {
+        super(config, client);
     }
 
     public void deleteSegmentObject(final String objectName) throws RemoteStorageException {
