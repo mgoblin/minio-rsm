@@ -129,9 +129,8 @@ class NameAssignerTest {
 
     @Test
     public void NullTopicName() {
-        final String topicName = null;
         final int partition = 0;
-        final TopicPartition topicPartition = new TopicPartition(topicName, partition);
+        final TopicPartition topicPartition = new TopicPartition(null, partition);
 
         final Uuid topicUuid = Uuid.randomUuid();
         final TopicIdPartition topicIdPartition = new TopicIdPartition(topicUuid, topicPartition);

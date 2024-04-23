@@ -54,13 +54,7 @@ public class NaiveRsmDeleteTest {
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
 
-            final ByteEncodedMetadata byteEncodedMetadata = new ByteEncodedMetadata((byte) 0);
-            byteEncodedMetadata.setDataNotEmpty(true);
-            byteEncodedMetadata.setIndexNotEmpty(true);
-            byteEncodedMetadata.setTimeIndexNotEmpty(true);
-            byteEncodedMetadata.setTransactionIndexNotEmpty(true);
-            byteEncodedMetadata.setProducerSnapshotIndexNotEmpty(true);
-            byteEncodedMetadata.setLeaderEpochIndexNotEmpty(true);
+            final ByteEncodedMetadata byteEncodedMetadata = new ByteEncodedMetadata((byte) 63);
 
             final RemoteLogSegmentMetadata.CustomMetadata customMetadata = new RemoteLogSegmentMetadata.CustomMetadata(
                     new byte[] {byteEncodedMetadata.getByteValue()});
