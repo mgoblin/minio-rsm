@@ -18,6 +18,7 @@ package ru.mg.kafka.tieredstorage.minio.io;
 
 import java.io.IOException;
 
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 
 import java.util.Map;
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 public class UploaderCopyIndexesTest {
+
     private static final Map<String, ?> NOT_AUTO_CREATE_BUCKET_CONFIG =
             Map.of(
                     "minio.url", "http://0.0.0.0",
@@ -85,6 +87,157 @@ public class UploaderCopyIndexesTest {
                 RemoteStorageException.class,
                 () -> uploader.copyOffsetIndex(Path.of(
                                 "./src/test/testData/test.index"),
+                        "testIndex"));
+    }
+
+    @Test
+    public void testCopyTimeIndex() throws Exception {
+        final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
+        final var minioClientMock = mock(MinioClient.class);
+
+        final Uploader uploader = new Uploader(config, minioClientMock);
+
+        uploader.copyTimeIndex(Path.of("./src/test/testData/test.index"), "testIndex");
+
+    }
+
+    @Test
+    public void testCopyNonExistedTimeIndex() {
+        final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
+        final var minioClientMock = mock(MinioClient.class);
+
+        final Uploader uploader = new Uploader(config, minioClientMock);
+
+        assertThrows(
+                RemoteStorageException.class,
+                () -> uploader.copyTimeIndex(Path.of(
+                                "./src/test/testData/xxx.index"),
+                        "testIndex"));
+    }
+
+    @Test
+    public void testCopyTimeIndexIOException() throws Exception {
+        final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
+        final var minioClientMock = mock(MinioClient.class);
+
+        doThrow(IOException.class).when(minioClientMock).putObject(any());
+
+        final Uploader uploader = new Uploader(config, minioClientMock);
+
+        assertThrows(
+                RemoteStorageException.class,
+                () -> uploader.copyTimeIndex(Path.of(
+                                "./src/test/testData/test.index"),
+                        "testIndex"));
+    }
+
+    @Test
+    public void testCopyProducerSnapshotIndex() throws Exception {
+        final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
+        final var minioClientMock = mock(MinioClient.class);
+
+        final Uploader uploader = new Uploader(config, minioClientMock);
+
+        uploader.copyProducerSnapshotIndex(Path.of("./src/test/testData/test.index"), "testIndex");
+
+    }
+
+    @Test
+    public void testCopyNonExistedProducerSnapshotIndex() {
+        final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
+        final var minioClientMock = mock(MinioClient.class);
+
+        final Uploader uploader = new Uploader(config, minioClientMock);
+
+        assertThrows(
+                RemoteStorageException.class,
+                () -> uploader.copyProducerSnapshotIndex(Path.of(
+                                "./src/test/testData/xxx.index"),
+                        "testIndex"));
+    }
+
+    @Test
+    public void testCopyProducerSnapshotIndexIOException() throws Exception {
+        final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
+        final var minioClientMock = mock(MinioClient.class);
+
+        doThrow(IOException.class).when(minioClientMock).putObject(any());
+
+        final Uploader uploader = new Uploader(config, minioClientMock);
+
+        assertThrows(
+                RemoteStorageException.class,
+                () -> uploader.copyProducerSnapshotIndex(Path.of(
+                                "./src/test/testData/test.index"),
+                        "testIndex"));
+    }
+
+    @Test
+    public void testCopyTransactionalIndex() throws Exception {
+        final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
+        final var minioClientMock = mock(MinioClient.class);
+
+        final Uploader uploader = new Uploader(config, minioClientMock);
+
+        uploader.copyTransactionalIndex(Path.of("./src/test/testData/test.index"), "testIndex");
+
+    }
+
+    @Test
+    public void testCopyNonExistedTransactionalIndex() {
+        final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
+        final var minioClientMock = mock(MinioClient.class);
+
+        final Uploader uploader = new Uploader(config, minioClientMock);
+
+        assertThrows(
+                RemoteStorageException.class,
+                () -> uploader.copyTransactionalIndex(Path.of(
+                                "./src/test/testData/xxx.index"),
+                        "testIndex"));
+    }
+
+    @Test
+    public void testCopyTransactionalIndexIOException() throws Exception {
+        final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
+        final var minioClientMock = mock(MinioClient.class);
+
+        doThrow(IOException.class).when(minioClientMock).putObject(any());
+
+        final Uploader uploader = new Uploader(config, minioClientMock);
+
+        assertThrows(
+                RemoteStorageException.class,
+                () -> uploader.copyTransactionalIndex(Path.of(
+                                "./src/test/testData/test.index"),
+                        "testIndex"));
+    }
+
+    @Test
+    public void testCopyLeaderEpochIndex() throws Exception {
+        final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
+        final var minioClientMock = mock(MinioClient.class);
+
+        final Uploader uploader = new Uploader(config, minioClientMock);
+
+        final ByteBuffer bbData = ByteBuffer.wrap(new byte[] {0, 1});
+        uploader.copyLeaderEpochIndex(bbData, "testIndex");
+
+    }
+
+    @Test
+    public void testCopyLeaderEpochIndexIOException() throws Exception {
+        final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
+        final var minioClientMock = mock(MinioClient.class);
+
+        doThrow(IOException.class).when(minioClientMock).putObject(any());
+
+        final Uploader uploader = new Uploader(config, minioClientMock);
+
+        assertThrows(
+                RemoteStorageException.class,
+                () -> uploader.copyLeaderEpochIndex(
+                        ByteBuffer.wrap(new byte[] {0, 1}),
                         "testIndex"));
     }
 }
