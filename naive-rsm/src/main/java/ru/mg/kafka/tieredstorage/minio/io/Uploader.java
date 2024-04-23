@@ -29,6 +29,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.kafka.common.utils.ByteBufferInputStream;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
+import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
@@ -43,8 +44,6 @@ import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-//TODO Add unit tests
-
 /**
  * Uploader implementation for Minio S3
  *
@@ -53,11 +52,17 @@ import org.slf4j.LoggerFactory;
  */
 public class Uploader extends BackendPart implements IUploader {
     private static final Logger log = LoggerFactory.getLogger(Uploader.class);
+
+    // TODO make content type and min part size configurable
     private static final String CONTENT_TYPE = "application/binary";
     private static final int MIN_PART_SIZE = 5 * 1024 * 1024; // 5 MiB
 
     public Uploader(final ConnectionConfig config) {
         super(config);
+    }
+
+    Uploader(final ConnectionConfig config, final MinioClient minioClient) {
+        super(config, minioClient);
     }
 
     private void writeFileByPathToMinio(
