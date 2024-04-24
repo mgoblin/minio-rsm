@@ -21,7 +21,6 @@ import java.io.InputStream;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
 
-// TODO clarify object not found in S3 storage case
 /**
  * S3 fetcher interface. Fetches log segment data and indexes from S3 remote storage
  */

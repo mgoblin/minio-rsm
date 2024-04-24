@@ -42,8 +42,6 @@ import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-//TODO Add unit tests
-
 /**
  * Fetcher implementation for Minio S3
  *
