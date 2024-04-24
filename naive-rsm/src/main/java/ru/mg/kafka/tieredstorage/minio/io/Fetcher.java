@@ -28,6 +28,7 @@ import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
 
 import io.minio.GetObjectArgs;
+import io.minio.MinioClient;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
 import io.minio.errors.InternalException;
@@ -54,6 +55,10 @@ public class Fetcher extends BackendPart implements IFetcher {
 
     public Fetcher(final ConnectionConfig config) {
         super(config);
+    }
+
+    public Fetcher(final ConnectionConfig config, final MinioClient minioClient) {
+        super(config, minioClient);
     }
 
     /**
