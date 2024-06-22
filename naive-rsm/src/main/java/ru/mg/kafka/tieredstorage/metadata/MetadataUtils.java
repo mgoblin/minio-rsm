@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ru.mg.kafka.tieredstorage.minio.metadata;
+package ru.mg.kafka.tieredstorage.metadata;
 
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
 

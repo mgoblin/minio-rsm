@@ -23,7 +23,7 @@ import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadataUpdate;
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentState;
 
-import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
+import ru.mg.kafka.tieredstorage.metadata.ByteEncodedMetadata;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

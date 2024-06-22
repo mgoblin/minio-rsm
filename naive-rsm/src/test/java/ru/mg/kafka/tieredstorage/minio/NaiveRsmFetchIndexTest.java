@@ -30,7 +30,7 @@ import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
 
 import ru.mg.kafka.tieredstorage.backend.IFetcher;
-import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
+import ru.mg.kafka.tieredstorage.metadata.ByteEncodedMetadata;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

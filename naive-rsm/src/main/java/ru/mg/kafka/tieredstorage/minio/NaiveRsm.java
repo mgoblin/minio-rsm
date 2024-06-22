@@ -30,13 +30,13 @@ import org.apache.kafka.server.log.remote.storage.RemoteResourceNotFoundExceptio
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
 import ru.mg.kafka.tieredstorage.backend.RemoteStorageBackend;
+import ru.mg.kafka.tieredstorage.metadata.ByteEncodedMetadata;
+import ru.mg.kafka.tieredstorage.metadata.MetadataUtils;
 import ru.mg.kafka.tieredstorage.minio.backend.naive.Fetcher;
 import ru.mg.kafka.tieredstorage.minio.backend.naive.MinioS3Backend;
 import ru.mg.kafka.tieredstorage.minio.backend.naive.RecoverableConfigurationFailException;
 import ru.mg.kafka.tieredstorage.minio.backend.naive.Uploader;
 import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
-import ru.mg.kafka.tieredstorage.minio.metadata.ByteEncodedMetadata;
-import ru.mg.kafka.tieredstorage.minio.metadata.MetadataUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
