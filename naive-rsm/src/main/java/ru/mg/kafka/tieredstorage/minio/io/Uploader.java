@@ -27,6 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import org.apache.commons.io.FileUtils;
 
 import org.apache.kafka.common.utils.ByteBufferInputStream;
+import org.apache.kafka.server.log.remote.storage.RemoteResourceNotFoundException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
 import io.minio.MinioClient;
@@ -75,12 +76,13 @@ public class Uploader extends BackendPart implements IUploader {
         final var localFilePath = srcPath.normalize().toAbsolutePath();
 
         try {
-            final var  bytes = FileUtils.readFileToByteArray(localFilePath.toFile());
+            // TODO may be change to ByteBufferedInputStream
+            final var bytes = FileUtils.readFileToByteArray(localFilePath.toFile());
             final ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
             writeByteBufferToMinio(byteBuffer, bucketName, objectName, entityName);
         } catch (final IOException e) {
             log.error("Access to file {} IO error", localFilePath, e);
-            throw new RemoteStorageException(e);
+            throw new RemoteResourceNotFoundException(e);
         }
     }
 

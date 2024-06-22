@@ -56,6 +56,7 @@ public class Deleter extends BackendPart implements IDeleter {
         super(config, client);
     }
 
+    // TODO Warn if object doesn't exists
     public void deleteSegmentObject(final String objectName) throws RemoteStorageException {
         log.trace("Starting delete object {} from bucket {} and url {}",
                 objectName,
