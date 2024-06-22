@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ru.mg.kafka.tieredstorage.minio.io;
+package ru.mg.kafka.tieredstorage.minio.backend.naive;
 
 import java.util.Objects;
 

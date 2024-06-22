@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package ru.mg.kafka.tieredstorage.minio.io;
+package ru.mg.kafka.tieredstorage.minio.backend.naive;
 
 import java.io.IOException;
-import java.io.InputStream;
+
+import java.nio.file.Path;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
-import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
 
-import io.minio.GetObjectResponse;
 import io.minio.MinioClient;
 import io.minio.errors.ErrorResponseException;
 import io.minio.errors.InsufficientDataException;
@@ -44,15 +43,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class FetcherReadIndexTest {
+public class UploaderCopyDataTest {
 
     private static final Map<String, ?> NOT_AUTO_CREATE_BUCKET_CONFIG =
             Map.of(
@@ -63,84 +63,85 @@ public class FetcherReadIndexTest {
             );
 
     @Test
-    public void testReadIndex() throws Exception {
+    public void testCopySegmentData() throws Exception {
         final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
         final var minioClientMock = mock(MinioClient.class);
 
-        when(minioClientMock.getObject(any())).thenReturn(new GetObjectResponse(
-                Headers.of(), "bucket", "region", "object", InputStream.nullInputStream()
-        ));
+        final Uploader uploader = new Uploader(config, minioClientMock);
 
-        final Fetcher fetcher = new Fetcher(config, minioClientMock);
+        uploader.copySegmentData(Path.of("./src/test/testData/test.log"), "object");
 
-        try (final InputStream stream = fetcher.readIndex("object", RemoteStorageManager.IndexType.OFFSET)) {
-            assertNotNull(stream);
-        }
+        verify(minioClientMock, times(1)).putObject(any());
     }
 
     @Test
-    public void testReadIndexIOException() throws Exception {
+    public void testCopyNonExistedSegmentData() {
         final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
         final var minioClientMock = mock(MinioClient.class);
 
-        doThrow(IOException.class).when(minioClientMock).getObject(any());
-
-        final Fetcher fetcher = new Fetcher(config, minioClientMock);
+        final Uploader uploader = new Uploader(config, minioClientMock);
 
         assertThrows(
                 RemoteStorageException.class,
-                () ->  {
-                    try (final InputStream stream = fetcher.readIndex(
-                        "object",
-                        RemoteStorageManager.IndexType.OFFSET)) {
-                        assertNotNull(stream);
-                    }
-                });
+                () -> uploader.copySegmentData(
+                    Path.of("./src/test/testData/xxx.log"),
+                    "object"));
+
     }
 
     @Test
-    public void testReadIndexServerException() throws Exception {
+    public void testCopySegmentDataIOException() throws Exception {
         final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
         final var minioClientMock = mock(MinioClient.class);
 
-        doThrow(ServerException.class).when(minioClientMock).getObject(any());
+        doThrow(IOException.class).when(minioClientMock).putObject(any());
 
-        final Fetcher fetcher = new Fetcher(config, minioClientMock);
+        final Uploader uploader = new Uploader(config, minioClientMock);
 
         assertThrows(
                 RemoteStorageException.class,
-                () -> {
-                    try (final InputStream stream = fetcher.readIndex(
-                        "object",
-                        RemoteStorageManager.IndexType.OFFSET)) {
-                        assertNotNull(stream);
-                    }
-                });
+                () -> uploader.copySegmentData(
+                        Path.of("./src/test/testData/test.log"),
+                        "object"));
+
     }
 
     @Test
-    public void testReadIndexInsufficientDataException() throws Exception {
+    public void testCopySegmentDataServerException() throws Exception {
         final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
         final var minioClientMock = mock(MinioClient.class);
 
-        doThrow(InsufficientDataException.class).when(minioClientMock).getObject(any());
+        doThrow(ServerException.class).when(minioClientMock).putObject(any());
 
-        final Fetcher fetcher = new Fetcher(config, minioClientMock);
+        final Uploader uploader = new Uploader(config, minioClientMock);
 
         assertThrows(
                 RemoteStorageException.class,
-                () -> {
-                    try (final InputStream stream = fetcher.readIndex(
-                            "object",
-                            RemoteStorageManager.IndexType.OFFSET)) {
-                        assertNotNull(stream);
-                    }
-                });
+                () -> uploader.copySegmentData(
+                        Path.of("./src/test/testData/test.log"),
+                        "object"));
+
     }
 
     @Test
-    public void testReadIndexErrorResponseException() throws Exception {
+    public void testCopySegmentDataInsufficientDataException() throws Exception {
+        final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
+        final var minioClientMock = mock(MinioClient.class);
 
+        doThrow(InsufficientDataException.class).when(minioClientMock).putObject(any());
+
+        final Uploader uploader = new Uploader(config, minioClientMock);
+
+        assertThrows(
+                RemoteStorageException.class,
+                () -> uploader.copySegmentData(
+                        Path.of("./src/test/testData/test.log"),
+                        "object"));
+
+    }
+
+    @Test
+    public void testCopySegmentDataErrorResponseException() throws Exception {
         final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
         final var minioClientMock = mock(MinioClient.class);
 
@@ -171,39 +172,32 @@ public class FetcherReadIndexTest {
         ));
 
         doThrow(new ErrorResponseException(errorResponse, rs, "trace"))
-                .when(minioClientMock).getObject(any());
+                .when(minioClientMock).putObject(any());
 
-        final Fetcher fetcher = new Fetcher(config, minioClientMock);
+        final Uploader uploader = new Uploader(config, minioClientMock);
 
         assertThrows(
                 RemoteStorageException.class,
-                () -> {
-                    try (final InputStream stream = fetcher.readIndex(
-                            "object",
-                            RemoteStorageManager.IndexType.OFFSET)) {
-                        assertNotNull(stream);
-                    }
-                });
+                () -> uploader.copySegmentData(
+                        Path.of("./src/test/testData/test.log"),
+                        "object"));
+
     }
 
     @Test
-    public void testReadIndexInternalException() throws Exception {
+    public void testCopySegmentDataIternalException() throws Exception {
         final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
         final var minioClientMock = mock(MinioClient.class);
 
-        doThrow(NoSuchAlgorithmException.class).when(minioClientMock).getObject(any());
+        doThrow(NoSuchAlgorithmException.class).when(minioClientMock).putObject(any());
 
-        final Fetcher fetcher = new Fetcher(config, minioClientMock);
+        final Uploader uploader = new Uploader(config, minioClientMock);
 
         assertThrows(
                 RemoteStorageException.class,
-                () -> {
-                    try (final InputStream stream = fetcher.readIndex(
-                            "object",
-                            RemoteStorageManager.IndexType.OFFSET)) {
-                        assertNotNull(stream);
-                    }
-                });
-    }
+                () -> uploader.copySegmentData(
+                        Path.of("./src/test/testData/test.log"),
+                        "object"));
 
+    }
 }

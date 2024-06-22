@@ -23,11 +23,11 @@ import ru.mg.kafka.tieredstorage.backend.IDeleter;
 import ru.mg.kafka.tieredstorage.backend.IFetcher;
 import ru.mg.kafka.tieredstorage.backend.IUploader;
 import ru.mg.kafka.tieredstorage.backend.RemoteStorageBackend;
+import ru.mg.kafka.tieredstorage.minio.backend.naive.Bucket;
+import ru.mg.kafka.tieredstorage.minio.backend.naive.Deleter;
+import ru.mg.kafka.tieredstorage.minio.backend.naive.Fetcher;
+import ru.mg.kafka.tieredstorage.minio.backend.naive.Uploader;
 import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
-import ru.mg.kafka.tieredstorage.minio.io.Bucket;
-import ru.mg.kafka.tieredstorage.minio.io.Deleter;
-import ru.mg.kafka.tieredstorage.minio.io.Fetcher;
-import ru.mg.kafka.tieredstorage.minio.io.Uploader;
 
 import static org.mockito.Mockito.mock;
 

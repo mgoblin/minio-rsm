@@ -23,7 +23,7 @@ import java.util.Map;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
-import ru.mg.kafka.tieredstorage.minio.io.RecoverableConfigurationFailException;
+import ru.mg.kafka.tieredstorage.minio.backend.naive.RecoverableConfigurationFailException;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
