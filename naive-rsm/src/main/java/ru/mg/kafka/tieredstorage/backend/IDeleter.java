@@ -30,4 +30,5 @@ public interface IDeleter {
      * @throws RemoteStorageException on error
      */
     void deleteSegmentObject(final String objectName) throws RemoteStorageException;
+
 }

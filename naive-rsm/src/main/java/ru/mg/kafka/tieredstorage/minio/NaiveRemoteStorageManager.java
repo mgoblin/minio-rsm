@@ -321,9 +321,22 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
 
         ensureInitialized();
 
-        final var names = new NameAssigner(remoteLogSegmentMetadata);
+        final List<String> segmentObjectNames = objectNamesForDeletion(remoteLogSegmentMetadata);
 
-        log.debug("Delete log files {} started", names.getBaseName());
+        log.debug("Objects for delete are {}",
+                String.join(", " + System.lineSeparator(), segmentObjectNames));
+
+        for (final String objectName: segmentObjectNames) {
+            log.trace("Delete {} object", objectName);
+            backend.deleter().deleteSegmentObject(objectName);
+        }
+
+        log.debug("Delete log files {} finished",
+                String.join(", " + System.lineSeparator(), segmentObjectNames));
+    }
+
+    private List<String> objectNamesForDeletion(final RemoteLogSegmentMetadata remoteLogSegmentMetadata) {
+        final var names = new NameAssigner(remoteLogSegmentMetadata);
 
         final ByteEncodedMetadata metadata = MetadataUtils.metadata(remoteLogSegmentMetadata);
 
@@ -335,20 +348,11 @@ public class NaiveRemoteStorageManager implements org.apache.kafka.server.log.re
                 names.producerSnapshotObjectName(), metadata.isProducerSnapshotIndexNotEmpty(),
                 names.leaderEpochObjectName(), metadata.isLeaderEpochIndexNotEmpty()
         );
-        final List<String> segmentObjectNames = namesWithMetadata.entrySet().stream()
+
+        return namesWithMetadata.entrySet().stream()
                 .filter(Map.Entry::getValue)
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
-
-        log.debug("Objects for delete from {} are {}", names.getBaseName(),
-                String.join(", " + System.lineSeparator(), segmentObjectNames));
-
-        for (final String dataObjectName: segmentObjectNames) {
-            log.trace("Delete {} file", dataObjectName);
-
-            backend.deleter().deleteSegmentObject(dataObjectName);
-        }
-        log.debug("Delete log files {} finished", names.getBaseName());
     }
 
     /**

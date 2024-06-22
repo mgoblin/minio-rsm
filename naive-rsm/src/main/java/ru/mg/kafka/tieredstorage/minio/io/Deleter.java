@@ -23,7 +23,6 @@ import java.security.NoSuchAlgorithmException;
 
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
-import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.RemoveObjectArgs;
 import io.minio.errors.ErrorResponseException;
@@ -64,27 +63,16 @@ public class Deleter extends BackendPart implements IDeleter {
                 config.getMinioS3EndpointUrl());
 
         try {
-            if (objectExists(objectName)) {
-                log.trace("Object from deleting {} from bucket {} and url {} found",
-                        objectName,
-                        config.getMinioBucketName(),
-                        config.getMinioS3EndpointUrl());
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(config.getMinioBucketName())
+                            .object(objectName)
+                            .build());
+            log.debug("Object {} from bucket {} and url {} deleted",
+                    objectName,
+                    config.getMinioBucketName(),
+                    config.getMinioS3EndpointUrl());
 
-                minioClient.removeObject(
-                        RemoveObjectArgs.builder()
-                                .bucket(config.getMinioBucketName())
-                                .object(objectName)
-                                .build());
-                log.debug("Object {} from bucket {} and url {} deleted",
-                        objectName,
-                        config.getMinioBucketName(),
-                        config.getMinioS3EndpointUrl());
-            } else {
-                log.warn("Object {} for deletion from bucket {} and url {} does not exists",
-                        objectName,
-                        config.getMinioBucketName(),
-                        config.getMinioS3EndpointUrl());
-            }
         } catch (final IOException | ServerException e) {
             log.error("Delete {} from {} error. IO or server exception occurred.",
                     objectName,
@@ -110,23 +98,6 @@ public class Deleter extends BackendPart implements IDeleter {
                     config.getMinioBucketName(),
                     e);
             throw new RemoteStorageException(e);
-        }
-    }
-
-    public boolean objectExists(final String dataObjectName) {
-        try (final var response = minioClient.getObject(GetObjectArgs.builder()
-                .bucket(config.getMinioBucketName())
-                .object(dataObjectName)
-                .build())) {
-            log.trace("Object {} found and have available {} bytes",
-                    dataObjectName,
-                    response.available());
-            return true;
-        } catch (final ServerException | InsufficientDataException | ErrorResponseException
-                       | IOException | NoSuchAlgorithmException | InvalidKeyException | InvalidResponseException
-                       | XmlParserException | InternalException e) {
-            log.error("Error getting object {}", dataObjectName, e);
-            return false;
         }
     }
 }
