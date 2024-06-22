@@ -20,6 +20,21 @@ val junitPlatformVersion by extra { "1.10.0" }
 val assertJVersion by extra { "3.24.2" }
 val mockitoVersion by extra { "5.5.0" }
 
+sourceSets {
+    create("intTest") {
+        compileClasspath += sourceSets.main.get().output
+        runtimeClasspath += sourceSets.main.get().output
+    }
+}
+
+val intTestImplementation by configurations.getting {
+    extendsFrom(configurations.implementation.get())
+}
+val intTestRuntimeOnly by configurations.getting
+
+configurations["intTestRuntimeOnly"].extendsFrom(configurations.runtimeOnly.get())
+
+
 dependencies {
     implementation("org.apache.commons:commons-lang3:${apacheCommonsLangVersion}")
     implementation("commons-validator:commons-validator:${apacheCommonsValidatorVersion}")
@@ -31,6 +46,11 @@ dependencies {
     compileOnly("org.apache.kafka:kafka-storage-api:${kafkaVersion}")
 
     compileOnly("org.slf4j:slf4j-api:${slf4jVersion}")
+
+    intTestImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
+    intTestRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    intTestImplementation("org.mockito:mockito-core:${mockitoVersion}")
+    intTestImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
 
     testImplementation("org.apache.kafka:kafka-clients:${kafkaVersion}")
     testImplementation("org.apache.kafka:kafka-storage-api:${kafkaVersion}")
@@ -57,3 +77,21 @@ tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
 }
+
+val integrationTest = tasks.register<Test>("integrationTest") {
+    description = "Runs the integration tests."
+    group = "verification"
+    testClassesDirs = sourceSets["intTest"].output.classesDirs
+    classpath = sourceSets["intTest"].runtimeClasspath
+
+    shouldRunAfter("test")
+
+    useJUnitPlatform()
+
+    // Run always.
+    outputs.upToDateWhen { false }
+}
+
+tasks.check { dependsOn(integrationTest) }
+
+

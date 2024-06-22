@@ -39,19 +39,6 @@ subprojects {
         configDirectory = rootProject.file("checkstyle/")
     }
 
-    val integrationTest = sourceSets.create("integrationTest")
-    integrationTest.compileClasspath += sourceSets.main.get().output + configurations.testRuntimeClasspath.get()
-    integrationTest.runtimeClasspath += integrationTest.output + integrationTest.compileClasspath
-
-    sourceSets {
-        integrationTest.java {
-            srcDirs("src/integration-test/java")
-        }
-        integrationTest.resources {
-            srcDirs("src/integration-test/resources")
-        }
-    }
-
     tasks {
         withType<JavaCompile> {
             sourceCompatibility = "21"
