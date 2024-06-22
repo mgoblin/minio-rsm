@@ -37,6 +37,7 @@ import ru.mg.kafka.tieredstorage.minio.backend.naive.MinioS3Backend;
 import ru.mg.kafka.tieredstorage.minio.backend.naive.RecoverableConfigurationFailException;
 import ru.mg.kafka.tieredstorage.minio.backend.naive.Uploader;
 import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
+import ru.mg.kafka.tieredstorage.naming.NameAssigner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
