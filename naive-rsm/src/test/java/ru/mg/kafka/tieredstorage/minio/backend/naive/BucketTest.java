@@ -23,6 +23,7 @@ import java.util.Map;
 
 import io.minio.MinioClient;
 
+import ru.mg.kafka.tieredstorage.minio.backend.RecoverableConfigurationFailException;
 import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 
 import org.junit.jupiter.api.Test;

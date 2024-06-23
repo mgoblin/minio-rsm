@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ru.mg.kafka.tieredstorage.minio.backend.naive;
+package ru.mg.kafka.tieredstorage.minio.backend;
 
 import java.util.Map;
 
@@ -23,6 +23,10 @@ import ru.mg.kafka.tieredstorage.backend.IDeleter;
 import ru.mg.kafka.tieredstorage.backend.IFetcher;
 import ru.mg.kafka.tieredstorage.backend.IUploader;
 import ru.mg.kafka.tieredstorage.backend.RemoteStorageBackend;
+import ru.mg.kafka.tieredstorage.minio.backend.naive.Bucket;
+import ru.mg.kafka.tieredstorage.minio.backend.naive.Deleter;
+import ru.mg.kafka.tieredstorage.minio.backend.naive.Fetcher;
+import ru.mg.kafka.tieredstorage.minio.backend.naive.Uploader;
 import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 
 /**

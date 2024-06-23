@@ -32,6 +32,7 @@ import io.minio.errors.ServerException;
 import io.minio.errors.XmlParserException;
 
 import ru.mg.kafka.tieredstorage.backend.IBucket;
+import ru.mg.kafka.tieredstorage.minio.backend.RecoverableConfigurationFailException;
 import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 
 import org.slf4j.Logger;

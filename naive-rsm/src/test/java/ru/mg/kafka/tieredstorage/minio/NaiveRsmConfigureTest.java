@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import java.util.Map;
 
-import ru.mg.kafka.tieredstorage.minio.backend.naive.RecoverableConfigurationFailException;
+import ru.mg.kafka.tieredstorage.minio.backend.RecoverableConfigurationFailException;
 import ru.mg.kafka.tieredstorage.minio.mock.MockedBackend;
 
 import org.junit.jupiter.api.Test;

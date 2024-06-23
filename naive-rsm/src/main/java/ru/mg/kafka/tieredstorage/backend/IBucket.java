@@ -16,7 +16,7 @@
 
 package ru.mg.kafka.tieredstorage.backend;
 
-import ru.mg.kafka.tieredstorage.minio.backend.naive.RecoverableConfigurationFailException;
+import ru.mg.kafka.tieredstorage.minio.backend.RecoverableConfigurationFailException;
 
 /**
  * Bucket operations interface.
