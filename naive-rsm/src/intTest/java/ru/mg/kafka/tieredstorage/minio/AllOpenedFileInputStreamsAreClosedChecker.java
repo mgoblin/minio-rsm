@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ru.mg.kafka.tieredstorage.minio.backend;
+package ru.mg.kafka.tieredstorage.minio;
 
 import java.io.IOException;
 import java.io.InputStream;

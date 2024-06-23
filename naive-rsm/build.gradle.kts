@@ -7,6 +7,7 @@
 
 plugins {
     `java-library`
+    jacoco
 }
 
 val minioSdkVersion by extra { "8.5.7" }
@@ -94,4 +95,14 @@ val integrationTest = tasks.register<Test>("integrationTest") {
 
 tasks.check { dependsOn(integrationTest) }
 
+tasks.test {
+    finalizedBy("jacocoTestReport")
+}
 
+integrationTest {
+    finalizedBy("jacocoTestReport")
+}
+
+tasks.jacocoTestReport {
+    executionData(integrationTest.get())
+}
