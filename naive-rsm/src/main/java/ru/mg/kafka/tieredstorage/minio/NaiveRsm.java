@@ -60,7 +60,8 @@ public class NaiveRsm implements org.apache.kafka.server.log.remote.storage.Remo
     /** Logger **/
     private static final Logger log = LoggerFactory.getLogger(NaiveRsm.class);
 
-    private RemoteStorageBackend backend;
+    /** Backend for minio interactions */
+    protected RemoteStorageBackend backend;
 
     /**
      * For testing purposes
@@ -286,19 +287,40 @@ public class NaiveRsm implements org.apache.kafka.server.log.remote.storage.Remo
      */
     @Override
     public void close() {
+        backend = null;
         log.debug("Remote storage manager closed");
     }
 
     /**
-     * Initialize RemoteStorageManager
+     * Initialize Remote Storage Manager
      * @param configs user configs
      */
     @Override
     public void configure(final Map<String, ?> configs) {
         log.trace("Staring to configure {}", this.getClass());
 
-        this.backend = new MinioS3Backend(Objects.requireNonNull(configs, "configs must not be null"));
+        initBackend(Objects.requireNonNull(configs));
+        if (!tryToMakeBucket(Objects.requireNonNull(configs))) {
+            backend = null;
+        }
+    }
 
+
+    /**
+     * Create backend
+     * @param configs RSM configs
+     */
+    protected void initBackend(final Map<String, ?> configs) {
+        if (backend == null) {
+            this.backend = new MinioS3Backend(Objects.requireNonNull(configs, "configs must not be null"));
+        }
+    }
+
+    /**
+     * Try to create bucket if not exists and config minio.auto.create.bucket = true
+     * @param configs RSM configs
+     */
+    protected boolean tryToMakeBucket(final Map<String, ?> configs) {
         try {
             backend.bucket().tryToMakeBucket();
 
@@ -307,10 +329,20 @@ public class NaiveRsm implements org.apache.kafka.server.log.remote.storage.Remo
                     this.getClass().getName(),
                     new ConnectionConfig(configs).originals());
 
+            return true;
         } catch (final RecoverableConfigurationFailException e) {
             log.error("{} configuration failed. recoverable error occurred.",
                     this.getClass(),
                     e);
+            return false;
         }
+    }
+
+    /**
+     * Get initialization state
+     * @return initialization state
+     */
+    public boolean isInitialized() {
+        return backend != null;
     }
 }

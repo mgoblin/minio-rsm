@@ -27,6 +27,8 @@ import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.config.types.Password;
 
+import ru.mg.kafka.tieredstorage.minio.DeferredInitRsm;
+
 import okhttp3.HttpUrl;
 
 import static io.minio.http.HttpUtils.validateUrl;
@@ -47,7 +49,7 @@ import static io.minio.http.HttpUtils.validateUrl;
  *     <li>minio.auto.create.bucket - create bucket if not exists. boolean, optional, default true</li>
  * </ul>
  *
- * @see ru.mg.kafka.tieredstorage.minio.NaiveRemoteStorageManager
+ * @see DeferredInitRsm
  */
 // TODO add minio client all params support
 public class ConnectionConfig extends AbstractConfig {

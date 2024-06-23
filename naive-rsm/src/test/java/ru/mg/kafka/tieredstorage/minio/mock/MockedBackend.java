@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ru.mg.kafka.tieredstorage.minio;
+package ru.mg.kafka.tieredstorage.minio.mock;
 
 import java.util.Map;
 

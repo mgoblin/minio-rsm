@@ -37,7 +37,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class NaiveRsmDeleteTest {
+public class DeferredInitRsmDeleteTest {
 
     private static final Map<String, ?> NOT_AUTO_CREATE_BUCKET_CONFIG =
             Map.of(
@@ -51,7 +51,7 @@ public class NaiveRsmDeleteTest {
     public void testDeleteSegment() throws Exception {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();

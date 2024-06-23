@@ -34,7 +34,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class NaiveRsmConfigureTest {
+public class DeferredInitRsmConfigureTest {
 
     private static final Map<String, Object> MINIMAL_CFG = Map.of(
             "minio.url", "http://0.0.0.0",

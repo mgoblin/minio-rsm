@@ -20,6 +20,9 @@ import java.io.IOException;
 
 import java.util.Map;
 
+import org.apache.kafka.common.config.ConfigException;
+import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
+
 import ru.mg.kafka.tieredstorage.minio.backend.naive.RecoverableConfigurationFailException;
 import ru.mg.kafka.tieredstorage.minio.mock.MockedBackend;
 
@@ -28,19 +31,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-public class NaiveRsmConfigureTest {
+public class DeferredInitRsmConfigTest {
 
     private static final Map<String, Object> MINIMAL_CFG = Map.of(
             "minio.url", "http://0.0.0.0",
             "minio.access.key", "access key",
             "minio.secret.key", "secret key"
-            );
+    );
 
     private static final Map<String, Object> NOT_AUTO_CREATE_BUCKET_CFG = Map.of(
             "minio.url", "http://0.0.0.0",
@@ -54,7 +58,7 @@ public class NaiveRsmConfigureTest {
         final var backendMock = new MockedBackend(MINIMAL_CFG);
         final var bucketMock = backendMock.bucket();
 
-        try (var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
 
             remoteStorageManager.configure(MINIMAL_CFG);
 
@@ -69,7 +73,7 @@ public class NaiveRsmConfigureTest {
         doThrow(new RecoverableConfigurationFailException(new IOException()))
                 .when(backendMock.bucket()).tryToMakeBucket();
 
-        try (final var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (final var remoteStorageManager = new DeferredInitRsm(backendMock)) {
             assertTrue(remoteStorageManager.isInitialized());
 
             remoteStorageManager.configure(MINIMAL_CFG);
@@ -80,7 +84,7 @@ public class NaiveRsmConfigureTest {
     @Test
     public void testConfig() {
 
-        try (final var remoteStorageManager = new NaiveRsm()) {
+        try (final var remoteStorageManager = new DeferredInitRsm()) {
             assertFalse(remoteStorageManager.isInitialized());
 
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CFG);
@@ -88,4 +92,46 @@ public class NaiveRsmConfigureTest {
         }
     }
 
+    @Test
+    public void testEnsureInitializedAfterConstructor() {
+        try (final var remoteStorageManager = new DeferredInitRsm()) {
+            assertFalse(remoteStorageManager.isInitialized());
+
+            assertThrows(
+                    RemoteStorageException.class,
+                    remoteStorageManager::ensureInitialized);
+        }
+    }
+
+    @Test
+    public void testEnsureInitializedAfterConfigureSuccess() throws RemoteStorageException {
+        try (final var remoteStorageManager = new DeferredInitRsm()) {
+            assertFalse(remoteStorageManager.isInitialized());
+
+            remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CFG);
+            assertTrue(remoteStorageManager.isInitialized());
+
+            remoteStorageManager.ensureInitialized();
+            assertTrue(remoteStorageManager.isInitialized());
+        }
+    }
+
+    @Test
+    public void testEnsureInitializedAfterConfigureFail() throws RemoteStorageException {
+        try (final var remoteStorageManager = new DeferredInitRsm()) {
+            assertFalse(remoteStorageManager.isInitialized());
+
+            assertThrows(ConfigException.class, () -> remoteStorageManager.configure(Map.of()));
+            assertFalse(remoteStorageManager.isInitialized());
+
+            assertThrows(ConfigException.class, remoteStorageManager::ensureInitialized);
+            assertFalse(remoteStorageManager.isInitialized());
+
+            remoteStorageManager.setConfigs(NOT_AUTO_CREATE_BUCKET_CFG);
+            assertFalse(remoteStorageManager.isInitialized());
+
+            remoteStorageManager.ensureInitialized();
+            assertTrue(remoteStorageManager.isInitialized());
+        }
+    }
 }

@@ -63,7 +63,7 @@ rlmm.config.remote.log.metadata.topic.replication.factor=1
 ## Only for testing
 rlmm.config.remote.log.metadata.topic.num.partitions=1
 
-remote.log.storage.manager.class.name=ru.mg.kafka.tieredstorage.minio.NaiveRemoteStorageManager
+remote.log.storage.manager.class.name=ru.mg.kafka.tieredstorage.minio.DeferredInitRsm
 remote.log.storage.manager.impl.prefix=rsm.config.
 rsm.config.minio.url=http://127.0.0.1:9000
 rsm.config.minio.access.key=<access key - minioadmin>

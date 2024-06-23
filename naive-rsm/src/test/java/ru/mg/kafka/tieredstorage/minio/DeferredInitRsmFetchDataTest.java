@@ -46,7 +46,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class NaiveRsmFetchDataTest {
+public class DeferredInitRsmFetchDataTest {
 
     private static final Map<String, ?> NOT_AUTO_CREATE_BUCKET_CONFIG =
             Map.of(
@@ -60,7 +60,7 @@ public class NaiveRsmFetchDataTest {
     public void testFetchSegmentFromStartPosition() throws Exception {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -99,7 +99,7 @@ public class NaiveRsmFetchDataTest {
     public void testFetchLogSegmentFromStartPositionEmptyMetadata() {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -122,7 +122,7 @@ public class NaiveRsmFetchDataTest {
     public void testFetchLogSegmentFromStartPositionWithNoCopySegmentFlagMetadata() {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -165,7 +165,7 @@ public class NaiveRsmFetchDataTest {
                         0
                 ));
 
-        try (var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             when(backendMock.fetcher().fetchLogSegmentData(any(), any(Integer.class), any(Integer.class)))
@@ -185,7 +185,7 @@ public class NaiveRsmFetchDataTest {
     public void testFetchSegmentFromStartAndEndPosition() throws Exception {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -225,7 +225,7 @@ public class NaiveRsmFetchDataTest {
     public void testFetchLogSegmentFromStartToEndPositionEmptyMetadata() {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -248,7 +248,7 @@ public class NaiveRsmFetchDataTest {
     public void testFetchLogSegmentFromStartToEndPositionWithNoCopySegmentFlagMetadata() {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();

@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
 
 // TODO implements exception, No flag tests
 @ExtendWith(MockitoExtension.class)
-public class NaiveRsmFetchIndexTest {
+public class DeferredInitRsmFetchIndexTest {
 
     private static final Map<String, ?> NOT_AUTO_CREATE_BUCKET_CONFIG =
             Map.of(
@@ -63,7 +63,7 @@ public class NaiveRsmFetchIndexTest {
     public void testFetchIndex() throws RemoteStorageException {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -106,7 +106,7 @@ public class NaiveRsmFetchIndexTest {
     public void testFetchIndexWithEmptyMetadata() {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();

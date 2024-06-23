@@ -28,10 +28,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
-public class NaiveRsmInitTest {
+public class DeferredInitRsmInitTest {
     @Test
     public void testNotInitializedAfterConstructor() {
-        try (var manager = new NaiveRsm()) {
+        try (var manager = new DeferredInitRsm()) {
             assertFalse(manager.isInitialized());
         }
     }
@@ -48,7 +48,7 @@ public class NaiveRsmInitTest {
 
         final var backendMock = new MockedBackend(cfg);
 
-        try (var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
             remoteStorageManager.configure(cfg);
 
             assertTrue(remoteStorageManager.isInitialized());
