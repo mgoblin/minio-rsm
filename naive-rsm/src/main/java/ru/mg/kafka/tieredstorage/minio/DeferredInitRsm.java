@@ -18,6 +18,7 @@ package ru.mg.kafka.tieredstorage.minio;
 
 import java.io.InputStream;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -212,7 +213,9 @@ public class DeferredInitRsm
         log.trace("Staring to configure {}", DeferredInitRsm.class);
 
         Objects.requireNonNull(configs, "configs must not be null");
-        this.configs = configs;
+        if (this.configs == null) {
+            this.configs = configs;
+        }
 
         if (!initialized) {
             log.debug("Try to configure remote storage manager {}", DeferredInitRsm.class);
@@ -245,6 +248,6 @@ public class DeferredInitRsm
      * @return configs
      */
     public Map<String, ?> getConfigs() {
-        return Map.copyOf(configs);
+        return new HashMap<>(configs);
     }
 }

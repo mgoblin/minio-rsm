@@ -16,6 +16,7 @@
 
 package ru.mg.kafka.tieredstorage.minio;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.kafka.common.config.ConfigException;
@@ -26,7 +27,12 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_ACCESS_KEY;
+import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_AUTO_CREATE_BUCKET;
+import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_BUCKET_NAME;
 import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_S3_ENDPOINT_URL;
+import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_SECRET_KEY;
 
 public class DeferredInitRsmConfigIntegrationTest {
 
@@ -119,4 +125,190 @@ public class DeferredInitRsmConfigIntegrationTest {
 
         assertEquals(config, rsm.getConfigs());
     }
+
+    @Test
+    public void testEmptyAccessKey() {
+        final Map<String, String> config = Map.of(
+                MINIO_S3_ENDPOINT_URL, "http://127.0.0.1:9000",
+                MINIO_ACCESS_KEY, "");
+
+        final ConfigException exception = assertThrows(
+                ConfigException.class,
+                () -> rsm.configure(config));
+
+        final String message = exception.getMessage();
+        assertEquals(
+                "Remote storage manager config is not valid: minio.access.key should not be blank",
+                message);
+
+        assertEquals(config, rsm.getConfigs());
+    }
+
+    @Test
+    public void testBlankAccessKey() {
+        final Map<String, String> config = Map.of(
+                MINIO_S3_ENDPOINT_URL, "http://127.0.0.1:9000",
+                MINIO_ACCESS_KEY, " ");
+
+        final ConfigException exception = assertThrows(
+                ConfigException.class,
+                () -> rsm.configure(config));
+
+        final String message = exception.getMessage();
+        assertEquals(
+                "Remote storage manager config is not valid: minio.access.key should not be blank",
+                message);
+
+        assertEquals(config, rsm.getConfigs());
+    }
+
+    @Test
+    public void testEmptySecretKey() {
+        final Map<String, String> config = Map.of(
+                MINIO_S3_ENDPOINT_URL, "http://127.0.0.1:9000",
+                MINIO_ACCESS_KEY, "xxx");
+
+        final ConfigException exception = assertThrows(
+                ConfigException.class,
+                () -> rsm.configure(config));
+
+        final String message = exception.getMessage();
+        assertEquals(
+                "Remote storage manager config is not valid: minio.secret.key should not be blank",
+                message);
+
+        assertEquals(config, rsm.getConfigs());
+    }
+
+    @Test
+    public void testBlankSecretKey() {
+        final Map<String, String> config = Map.of(
+                MINIO_S3_ENDPOINT_URL, "http://127.0.0.1:9000",
+                MINIO_ACCESS_KEY, "xxx",
+                MINIO_SECRET_KEY, " ");
+
+        final ConfigException exception = assertThrows(
+                ConfigException.class,
+                () -> rsm.configure(config));
+
+        final String message = exception.getMessage();
+        assertEquals(
+                "Remote storage manager config is not valid: minio.secret.key should not be blank",
+                message);
+
+        assertEquals(config, rsm.getConfigs());
+    }
+
+    @Test
+    public void testNonBlankSecretKey() {
+        final Map<String, String> config = Map.of(
+                MINIO_S3_ENDPOINT_URL, "http://127.0.0.1:9000",
+                MINIO_ACCESS_KEY, "xxx",
+                MINIO_SECRET_KEY, "zzz");
+
+        rsm.configure(config);
+
+        assertEquals(config, rsm.getConfigs());
+    }
+
+    @Test
+    public void testEmptyBucket() {
+        final Map<String, String> config = Map.of(
+                MINIO_S3_ENDPOINT_URL, "http://127.0.0.1:9000",
+                MINIO_ACCESS_KEY, "xxx",
+                MINIO_SECRET_KEY, "zzz",
+                MINIO_BUCKET_NAME, "");
+
+        final ConfigException exception = assertThrows(
+                ConfigException.class,
+                () -> rsm.configure(config));
+
+        final String message = exception.getMessage();
+        assertEquals(
+                "Invalid value  for configuration minio.bucket.name: String may not be empty",
+                message);
+
+        assertEquals(config, rsm.getConfigs());
+    }
+
+    @Test
+    public void testBlankBucket() {
+        final Map<String, String> config = Map.of(
+                MINIO_S3_ENDPOINT_URL, "http://127.0.0.1:9000",
+                MINIO_ACCESS_KEY, "xxx",
+                MINIO_SECRET_KEY, "zzz",
+                MINIO_BUCKET_NAME, " ");
+
+        final ConfigException exception = assertThrows(
+                ConfigException.class,
+                () -> rsm.configure(config));
+
+        final String message = exception.getMessage();
+        assertEquals(
+                "Invalid value  for configuration minio.bucket.name: String may not be empty",
+                message);
+
+        assertEquals(config, rsm.getConfigs());
+    }
+
+    @Test
+    public void testNullBucket() {
+        final Map<String, String> config = new HashMap<>();
+        config.put(MINIO_S3_ENDPOINT_URL, "http://127.0.0.1:9000");
+        config.put(MINIO_ACCESS_KEY, "xxx");
+        config.put(MINIO_SECRET_KEY, "zzz");
+        config.put(MINIO_BUCKET_NAME, null);
+
+        final ConfigException exception = assertThrows(
+                ConfigException.class,
+                () -> rsm.configure(config));
+
+        final String message = exception.getMessage();
+        assertEquals(
+                "Remote storage manager config is not valid: minio.bucket.name should not be blank",
+                message);
+
+        assertEquals(config, rsm.getConfigs());
+    }
+
+    @Test
+    public void testNonBlankBucket() {
+        final Map<String, ?> config = Map.of(
+                MINIO_S3_ENDPOINT_URL, "http://127.0.0.1:9000",
+                MINIO_ACCESS_KEY, "xxx",
+                MINIO_SECRET_KEY, "zzz",
+                MINIO_BUCKET_NAME, "bucket",
+                MINIO_AUTO_CREATE_BUCKET, false);
+
+        rsm.configure(config);
+
+        assertEquals(config, rsm.getConfigs());
+        assertTrue(rsm.isInitialized());
+    }
+
+    @Test
+    public void testTryConfigureTwice() {
+        final Map<String, ?> config = Map.of(
+                MINIO_S3_ENDPOINT_URL, "http://127.0.0.1:9000",
+                MINIO_ACCESS_KEY, "xxx",
+                MINIO_SECRET_KEY, "zzz",
+                MINIO_BUCKET_NAME, "bucket",
+                MINIO_AUTO_CREATE_BUCKET, false);
+
+        rsm.configure(config);
+
+        assertEquals(config, rsm.getConfigs());
+        assertTrue(rsm.isInitialized());
+
+        final Map<String, String> config2 = Map.of(
+                MINIO_S3_ENDPOINT_URL, "http://127.0.0.1:9000",
+                MINIO_ACCESS_KEY, "xxx",
+                MINIO_SECRET_KEY, "zzz",
+                MINIO_BUCKET_NAME, "bucket2");
+
+        rsm.configure(config2);
+        assertEquals(config, rsm.getConfigs());
+        assertTrue(rsm.isInitialized());
+    }
+
 }
