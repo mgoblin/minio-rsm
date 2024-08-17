@@ -19,6 +19,8 @@ package ru.mg.kafka.tieredstorage.minio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
 public class DeferredInitRsmIntegrationTest {
 
     private NaiveRsm rsm;
@@ -29,7 +31,8 @@ public class DeferredInitRsmIntegrationTest {
     }
 
     @Test
-    public void testTest() {
-
+    public void testIsInitializedAfterConstructor() {
+        final boolean isInitialized = rsm.isInitialized();
+        assertFalse(isInitialized);
     }
 }

@@ -51,8 +51,10 @@ dependencies {
     intTestImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
     intTestImplementation("org.mockito:mockito-core:${mockitoVersion}")
     intTestImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
+    intTestImplementation("org.apache.kafka:kafka-storage-api:${kafkaVersion}")
+    intTestImplementation("org.apache.kafka:kafka-clients:${kafkaVersion}")
     intTestRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    intTestRuntimeOnly("org.apache.kafka:kafka-storage-api:${kafkaVersion}")
+
 
     testImplementation("org.apache.kafka:kafka-clients:${kafkaVersion}")
     testImplementation("org.apache.kafka:kafka-storage-api:${kafkaVersion}")
