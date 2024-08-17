@@ -49,9 +49,10 @@ dependencies {
     compileOnly("org.slf4j:slf4j-api:${slf4jVersion}")
 
     intTestImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
-    intTestRuntimeOnly("org.junit.platform:junit-platform-launcher")
     intTestImplementation("org.mockito:mockito-core:${mockitoVersion}")
     intTestImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
+    intTestRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    intTestRuntimeOnly("org.apache.kafka:kafka-storage-api:${kafkaVersion}")
 
     testImplementation("org.apache.kafka:kafka-clients:${kafkaVersion}")
     testImplementation("org.apache.kafka:kafka-storage-api:${kafkaVersion}")
@@ -77,6 +78,7 @@ base {
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+    finalizedBy("jacocoTestReport")
 }
 
 val integrationTest = tasks.register<Test>("integrationTest") {
@@ -95,14 +97,15 @@ val integrationTest = tasks.register<Test>("integrationTest") {
 
 tasks.check { dependsOn(integrationTest) }
 
-tasks.test {
-    finalizedBy("jacocoTestReport")
-}
-
 integrationTest {
-    finalizedBy("jacocoTestReport")
+    finalizedBy("jacocoIterationTestReport")
 }
 
 tasks.jacocoTestReport {
-    executionData(integrationTest.get())
+    executionData(tasks.findByName("test"))
+}
+
+tasks.create<JacocoReport>("jacocoIterationTestReport") {
+    executionData(tasks.findByName("integrationTest"))
+    sourceSets(sourceSets.main.get())
 }

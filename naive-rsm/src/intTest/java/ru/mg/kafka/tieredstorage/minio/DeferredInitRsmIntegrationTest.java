@@ -16,9 +16,18 @@
 
 package ru.mg.kafka.tieredstorage.minio;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class NaiveRsmTest {
+public class DeferredInitRsmIntegrationTest {
+
+    private NaiveRsm rsm;
+
+    @BeforeEach
+    public void init() {
+        rsm = new DeferredInitRsm();
+    }
+
     @Test
     public void testTest() {
 
