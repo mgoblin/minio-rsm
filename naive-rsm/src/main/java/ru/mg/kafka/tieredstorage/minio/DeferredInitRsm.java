@@ -240,4 +240,11 @@ public class DeferredInitRsm
         this.configs = configs;
     }
 
+    /**
+     * Get configs
+     * @return configs
+     */
+    public Map<String, ?> getConfigs() {
+        return Map.copyOf(configs);
+    }
 }

@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doThrow;
@@ -54,9 +55,10 @@ public class DeferredInitRsmConfigureTest {
         final var backendMock = new MockedBackend(MINIMAL_CFG);
         final var bucketMock = backendMock.bucket();
 
-        try (var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
 
             remoteStorageManager.configure(MINIMAL_CFG);
+            assertEquals(MINIMAL_CFG, remoteStorageManager.getConfigs());
 
             verify(bucketMock, times(1)).tryToMakeBucket();
         }
@@ -69,10 +71,11 @@ public class DeferredInitRsmConfigureTest {
         doThrow(new RecoverableConfigurationFailException(new IOException()))
                 .when(backendMock.bucket()).tryToMakeBucket();
 
-        try (final var remoteStorageManager = new NaiveRsm(backendMock)) {
+        try (final var remoteStorageManager = new DeferredInitRsm(backendMock)) {
             assertTrue(remoteStorageManager.isInitialized());
 
             remoteStorageManager.configure(MINIMAL_CFG);
+            assertEquals(MINIMAL_CFG, remoteStorageManager.getConfigs());
             assertFalse(remoteStorageManager.isInitialized());
         }
     }
@@ -80,10 +83,11 @@ public class DeferredInitRsmConfigureTest {
     @Test
     public void testConfig() {
 
-        try (final var remoteStorageManager = new NaiveRsm()) {
+        try (final var remoteStorageManager = new DeferredInitRsm()) {
             assertFalse(remoteStorageManager.isInitialized());
 
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CFG);
+            assertEquals(NOT_AUTO_CREATE_BUCKET_CFG, remoteStorageManager.getConfigs());
             assertTrue(remoteStorageManager.isInitialized());
         }
     }
