@@ -32,6 +32,7 @@ import ru.mg.kafka.tieredstorage.minio.DeferredInitRsm;
 import okhttp3.HttpUrl;
 
 import static io.minio.http.HttpUtils.validateUrl;
+import static org.apache.commons.validator.routines.UrlValidator.ALLOW_LOCAL_URLS;
 
 /**
  * Minio config for Remote storage manager
@@ -161,7 +162,7 @@ public class ConnectionConfig extends AbstractConfig {
             Validate.notBlank(urlString, String .format("%s should not be blank", MINIO_S3_ENDPOINT_URL));
 
             final String[] schemes = {"http", "https"};
-            final UrlValidator urlValidator = new UrlValidator(schemes, null, 0);
+            final UrlValidator urlValidator = new UrlValidator(schemes, null, ALLOW_LOCAL_URLS);
             if (!urlValidator.isValid(urlString)) {
                 throw new IllegalArgumentException(String.format("minio.url value %s is not valid URL", urlString));
             }

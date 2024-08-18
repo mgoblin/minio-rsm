@@ -11,6 +11,7 @@ plugins {
 }
 
 val minioSdkVersion by extra { "8.5.7" }
+val minioContainerVersion by extra {"1.20.1"}
 val apacheCommonsLangVersion by extra { "3.13.0" }
 val apacheCommonsValidatorVersion by extra { "1.8.0" }
 val apacheCommonsIOVersion by extra { "2.15.0" }
@@ -20,6 +21,7 @@ val junitVersion by extra { "5.10.0" }
 val junitPlatformVersion by extra { "1.10.0" }
 val assertJVersion by extra { "3.24.2" }
 val mockitoVersion by extra { "5.5.0" }
+val logbackVersion by extra {"1.2.3"}
 
 sourceSets {
     create("intTest") {
@@ -49,11 +51,16 @@ dependencies {
     compileOnly("org.slf4j:slf4j-api:${slf4jVersion}")
 
     intTestImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
-    intTestImplementation("org.mockito:mockito-core:${mockitoVersion}")
-    intTestImplementation("org.mockito:mockito-junit-jupiter:${mockitoVersion}")
+
     intTestImplementation("org.apache.kafka:kafka-storage-api:${kafkaVersion}")
     intTestImplementation("org.apache.kafka:kafka-clients:${kafkaVersion}")
+
+    intTestImplementation("org.testcontainers:minio:${minioContainerVersion}")
+    intTestImplementation("org.testcontainers:testcontainers:${minioContainerVersion}")
+    intTestImplementation("org.testcontainers:junit-jupiter:${minioContainerVersion}")
+
     intTestRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    intTestRuntimeOnly("ch.qos.logback:logback-classic:${logbackVersion}")
 
 
     testImplementation("org.apache.kafka:kafka-clients:${kafkaVersion}")

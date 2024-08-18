@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.kafka.common.config.ConfigException;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,6 +42,11 @@ public class DeferredInitRsmConfigIntegrationTest {
     @BeforeEach
     public void init() {
         rsm = new DeferredInitRsm();
+    }
+
+    @AfterEach
+    public void tearDown() {
+        rsm.close();
     }
 
     @Test
