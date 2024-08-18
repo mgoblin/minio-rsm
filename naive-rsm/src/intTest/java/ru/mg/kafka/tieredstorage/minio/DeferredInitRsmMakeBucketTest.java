@@ -63,7 +63,7 @@ public class DeferredInitRsmMakeBucketTest {
     }
 
     @Test
-    public void testTest() throws Exception {
+    public void testMakeBucketIfNotExists() throws Exception {
         assertTrue(minIOContainer.isRunning());
 
         final MinioClient minioClient = MinioClient
