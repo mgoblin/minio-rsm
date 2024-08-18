@@ -19,6 +19,7 @@ package ru.mg.kafka.tieredstorage.minio;
 import java.util.Map;
 
 import io.minio.BucketExistsArgs;
+import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 
 import org.junit.jupiter.api.AfterEach;
@@ -74,6 +75,37 @@ public class DeferredInitRsmMakeBucketTest {
 
         final BucketExistsArgs existsArgs = BucketExistsArgs.builder().bucket(BUCKET_NAME_VAL).build();
         assertFalse(minioClient.bucketExists(existsArgs));
+
+        final Map<String, ?> configs = Map.of(
+                MINIO_S3_ENDPOINT_URL, minIOContainer.getS3URL(),
+                MINIO_ACCESS_KEY, minIOContainer.getUserName(),
+                MINIO_SECRET_KEY, minIOContainer.getPassword(),
+                MINIO_BUCKET_NAME, BUCKET_NAME_VAL,
+                MINIO_AUTO_CREATE_BUCKET, true
+        );
+        rsm.configure(configs);
+
+        assertTrue(rsm.isInitialized());
+        assertTrue(minioClient.bucketExists(existsArgs));
+    }
+
+    @Test
+    public void testMakeBucketIfExists() throws Exception {
+        assertTrue(minIOContainer.isRunning());
+
+        final MinioClient minioClient = MinioClient
+                .builder()
+                .endpoint(minIOContainer.getS3URL())
+                .credentials(minIOContainer.getUserName(), minIOContainer.getPassword())
+                .build();
+
+        final BucketExistsArgs existsArgs = BucketExistsArgs.builder().bucket(BUCKET_NAME_VAL).build();
+        assertFalse(minioClient.bucketExists(existsArgs));
+
+        final var makeBucketArgs = MakeBucketArgs.builder().bucket(BUCKET_NAME_VAL).build();
+        minioClient.makeBucket(makeBucketArgs);
+
+        assertTrue(minioClient.bucketExists(existsArgs));
 
         final Map<String, ?> configs = Map.of(
                 MINIO_S3_ENDPOINT_URL, minIOContainer.getS3URL(),
