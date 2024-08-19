@@ -61,6 +61,7 @@ public class DeferredInitRsmMakeBucketTest {
     @AfterEach
     public void tearDown() {
         rsm.close();
+        minIOContainer.close();
     }
 
     @Test

@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.kafka.common.config.ConfigException;
+import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -314,6 +315,45 @@ public class DeferredInitRsmConfigIntegrationTest {
 
         rsm.configure(config2);
         assertEquals(config, rsm.getConfigs());
+        assertTrue(rsm.isInitialized());
+    }
+
+    @Test
+    public void testEnsureIntitializeAfterConfig() throws RemoteStorageException {
+        final Map<String, ?> config = Map.of(
+                MINIO_S3_ENDPOINT_URL, "http://127.0.0.1:9000",
+                MINIO_ACCESS_KEY, "xxx",
+                MINIO_SECRET_KEY, "zzz",
+                MINIO_BUCKET_NAME, "bucket",
+                MINIO_AUTO_CREATE_BUCKET, false);
+
+        rsm.configure(config);
+        assertTrue(rsm.isInitialized());
+
+        rsm.ensureInitialized();
+        assertTrue(rsm.isInitialized());
+    }
+
+    @Test
+    public void testEnsureIntitializeBeforeConfig() {
+        assertThrows(RemoteStorageException.class, () -> rsm.ensureInitialized());
+        assertFalse(rsm.isInitialized());
+    }
+
+    @Test
+    public void testEnsureIntitializeReConfig() throws RemoteStorageException {
+        final Map<String, ?> config = Map.of(
+                MINIO_S3_ENDPOINT_URL, "http://127.0.0.1:9000",
+                MINIO_ACCESS_KEY, "xxx",
+                MINIO_SECRET_KEY, "zzz",
+                MINIO_BUCKET_NAME, "bucket",
+                MINIO_AUTO_CREATE_BUCKET, false);
+
+        rsm.configure(config);
+        assertTrue(rsm.isInitialized());
+        rsm.close();
+
+        rsm.ensureInitialized();
         assertTrue(rsm.isInitialized());
     }
 
