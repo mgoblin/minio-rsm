@@ -92,14 +92,6 @@ class NaiveRsm implements org.apache.kafka.server.log.remote.storage.RemoteStora
                 remoteLogSegmentMetadata,
                 logSegmentData);
 
-        if (remoteLogSegmentMetadata == null) {
-            throw new RemoteStorageException("RemoteLogSegmentMetadata argument is null");
-        }
-
-        if (logSegmentData == null) {
-            throw new RemoteStorageException("LogSegmentData argument is null");
-        }
-
         final var names = new NameAssigner(remoteLogSegmentMetadata);
         final var copyMetadata = new ByteEncodedMetadata();
 

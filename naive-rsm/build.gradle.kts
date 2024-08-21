@@ -104,17 +104,45 @@ val integrationTest = tasks.register<Test>("integrationTest") {
     outputs.upToDateWhen { false }
 }
 
-tasks.check { dependsOn(integrationTest) }
+tasks.check {
+    dependsOn(integrationTest)
+    finalizedBy(tasks.jacocoTestCoverageVerification)
+}
 
 integrationTest {
-    finalizedBy("jacocoIterationTestReport")
+    finalizedBy("integrationTestReport")
 }
 
 tasks.jacocoTestReport {
-    executionData(tasks.findByName("test"))
+    executionData(tasks.test.get())
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir("reports/coverage/unitTests")
+    }
 }
 
-tasks.create<JacocoReport>("jacocoIterationTestReport") {
-    executionData(tasks.findByName("integrationTest"))
+tasks.create<JacocoReport>("integrationTestReport") {
+    executionData(tasks.named("integrationTest").get())
     sourceSets(sourceSets.main.get())
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir("reports/coverage/integrationTests")
+    }
 }
+
+//tasks.jacocoTestCoverageVerification {
+//    executionData(tasks.test.get())
+//    violationRules {
+//        rule {
+//            element = "CLASS"
+//            limit {
+//                counter = "BRANCH"
+//                value = "COVEREDRATIO"
+//                minimum = "1.0".toBigDecimal()
+//            }
+//        }
+//    }
+//}
+

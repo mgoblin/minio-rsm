@@ -150,20 +150,24 @@ public class DeferredInitRsmCopySegmentTest {
                 ByteBuffer.wrap("leader epoch index".getBytes()));
     }
 
-    @Test
-    public void testCopySegmentWithNullMetadata() {
-        final RemoteStorageException ex = assertThrows(
-                RemoteStorageException.class,
-                () -> rsm.copyLogSegmentData(null, null));
-        assertEquals("RemoteLogSegmentMetadata argument is null", ex.getMessage());
-    }
-
-    @Test
-    public void testCopySegmentWithNullData() {
-        final RemoteStorageException ex = assertThrows(
-                RemoteStorageException.class,
-                () -> rsm.copyLogSegmentData(makeMetadata(), null));
-        assertEquals("LogSegmentData argument is null", ex.getMessage());
+    private LogSegmentData makeLogSegmentDataWithTnx() {
+        final String segmentDataPath = Objects.requireNonNull(this.getClass()
+                .getResource("/0.log")).getPath();
+        final String segmentIndexPath = Objects.requireNonNull(this.getClass()
+                .getResource("/0.index")).getPath();
+        final String segmentTimeIndexPath = Objects.requireNonNull(this.getClass()
+                .getResource("/0.time")).getPath();
+        final String segmentSnapshotPath = Objects.requireNonNull(this.getClass()
+                .getResource("/0.snapshot")).getPath();
+        final String segmentTnxIndexPath = Objects.requireNonNull(this.getClass()
+                .getResource("/0.txn")).getPath();
+        return new LogSegmentData(
+                Path.of(segmentDataPath),
+                Path.of(segmentIndexPath),
+                Path.of(segmentTimeIndexPath),
+                Optional.of(Path.of(segmentTnxIndexPath)),
+                Path.of(segmentSnapshotPath),
+                ByteBuffer.wrap("leader epoch index".getBytes()));
     }
 
     @Test
@@ -221,6 +225,68 @@ public class DeferredInitRsmCopySegmentTest {
         final String timeIndexContent = readItemFromMinio(
                 "topic1-0/00000000000000000000.timeindex");
         assertEquals("segment time index", timeIndexContent);
+
+        final String snapshotContent = readItemFromMinio(
+                "topic1-0/00000000000000000000.snapshot");
+        assertEquals("segment snapshot", snapshotContent);
+
+        final String leaderEpochContent = readItemFromMinio(
+                "topic1-0/00000000000000000000-leader-epoch-checkpoint");
+        assertEquals("leader epoch index", leaderEpochContent);
+    }
+
+    @Test
+    public void testCopySegmentWithTxnIndex() throws Exception {
+        final Optional<RemoteLogSegmentMetadata.CustomMetadata> optCustomMetadata = rsm.copyLogSegmentData(
+                makeMetadata(),
+                makeLogSegmentDataWithTnx());
+        assertNotNull(optCustomMetadata);
+        assertTrue(optCustomMetadata.isPresent());
+        final RemoteLogSegmentMetadata.CustomMetadata customMetadata = optCustomMetadata.get();
+        final byte[] value = customMetadata.value();
+        assertEquals(1, value.length);
+        final byte bitmask = value[0];
+        assertEquals(63, bitmask);
+
+        final var listArgs = ListObjectsArgs.builder()
+                .bucket(BUCKET_NAME_VAL)
+                .prefix("topic1-0")
+                .recursive(true)
+                .build();
+        final Iterable<io.minio.Result<io.minio.messages.Item>> results = minioClient.listObjects(listArgs);
+        final var resultsList = new ArrayList<io.minio.Result<io.minio.messages.Item>>();
+        results.forEach(resultsList::add);
+        final var items = resultsList.stream().map(x -> {
+            try {
+                return x.get().objectName();
+            } catch (final Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).toList();
+
+        assertTrue(items.contains("topic1-0/00000000000000000000.log"));
+        assertTrue(items.contains("topic1-0/00000000000000000000.index"));
+        assertTrue(items.contains("topic1-0/00000000000000000000.timeindex"));
+        assertTrue(items.contains("topic1-0/00000000000000000000.snapshot"));
+        assertTrue(items.contains("topic1-0/00000000000000000000.txnindex"));
+        assertTrue(items.contains("topic1-0/00000000000000000000-leader-epoch-checkpoint"));
+        assertEquals(6, items.size());
+
+        final String logContent = readItemFromMinio(
+                "topic1-0/00000000000000000000.log");
+        assertEquals("segment log", logContent);
+
+        final String indexContent = readItemFromMinio(
+                "topic1-0/00000000000000000000.index");
+        assertEquals("segment index", indexContent);
+
+        final String timeIndexContent = readItemFromMinio(
+                "topic1-0/00000000000000000000.timeindex");
+        assertEquals("segment time index", timeIndexContent);
+
+        final String txnIndexContent = readItemFromMinio(
+                "topic1-0/00000000000000000000.txnindex");
+        assertEquals("segment transactional index", txnIndexContent);
 
         final String snapshotContent = readItemFromMinio(
                 "topic1-0/00000000000000000000.snapshot");
