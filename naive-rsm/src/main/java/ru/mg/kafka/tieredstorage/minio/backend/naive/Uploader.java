@@ -82,7 +82,8 @@ public class Uploader extends BackendPart implements IUploader {
             writeByteBufferToMinio(byteBuffer, bucketName, objectName, entityName);
         } catch (final IOException e) {
             log.error("Access to file {} IO error", localFilePath, e);
-            throw new RemoteResourceNotFoundException(e);
+            throw new RemoteResourceNotFoundException(
+                    entityName + " with path " + localFilePath + " doesn't exists or available", e);
         }
     }
 
