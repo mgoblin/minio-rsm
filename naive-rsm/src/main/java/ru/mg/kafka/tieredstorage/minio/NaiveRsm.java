@@ -327,7 +327,7 @@ class NaiveRsm implements org.apache.kafka.server.log.remote.storage.RemoteStora
             log.info(
                     "Remote log manager {} initialized with {}",
                     this.getClass().getName(),
-                    new ConnectionConfig(configs).originals());
+                    new ConnectionConfig(configs));
 
             return true;
         } catch (final RecoverableConfigurationFailException e) {

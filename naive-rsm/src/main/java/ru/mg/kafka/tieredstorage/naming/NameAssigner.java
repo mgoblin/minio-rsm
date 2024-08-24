@@ -162,7 +162,7 @@ public class NameAssigner {
 
     @Override
     public String toString() {
-        return "PutS3Names{"
+        return "NameAssigner {"
                 + "logSegmentName='" + baseName + '\''
                 + '}';
     }

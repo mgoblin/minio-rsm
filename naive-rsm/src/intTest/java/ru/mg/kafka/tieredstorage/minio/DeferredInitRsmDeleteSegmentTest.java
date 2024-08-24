@@ -17,8 +17,21 @@
 package ru.mg.kafka.tieredstorage.minio;
 
 import java.util.Map;
+import java.util.Optional;
 
+import org.apache.commons.io.IOUtils;
+
+import org.apache.kafka.common.TopicIdPartition;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.Uuid;
+import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentId;
+import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
+import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentState;
+
+import io.minio.GetObjectArgs;
+import io.minio.ListObjectsArgs;
 import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_ACCESS_KEY;
 import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_AUTO_CREATE_BUCKET;
@@ -78,9 +92,78 @@ public class DeferredInitRsmDeleteSegmentTest {
         minIOContainer.close();
     }
 
-    @Test
-    public void testDeleteLogSegment() {
+    private void putStringToMinio(final String content, final String objectName) throws Exception {
+        try (final var is = IOUtils.toInputStream(content, "UTF-8")) {
+            final var putArgs = PutObjectArgs.builder()
+                    .bucket(BUCKET_NAME_VAL)
+                    .object(objectName)
+                    .stream(is, is.available(), -1)
+                    .build();
+            minioClient.putObject(putArgs);
+        }
+    }
 
+    private boolean isObjectExists(final String objectName) {
+        try {
+            final var getObjectArgs = GetObjectArgs.builder()
+                    .bucket(BUCKET_NAME_VAL)
+                    .object(objectName)
+                    .build();
+            final var response = minioClient.getObject(getObjectArgs);
+
+            return response.readAllBytes().length > 0;
+        } catch (final Exception ex) {
+            return false;
+        }
+    }
+
+    private boolean isBucketEmpty() {
+        final var listArgs = ListObjectsArgs.builder()
+                .bucket(BUCKET_NAME_VAL)
+                .recursive(true)
+                .build();
+        final var iterator = minioClient.listObjects(listArgs).iterator();
+        return !iterator.hasNext();
+    }
+
+    private RemoteLogSegmentMetadata makeMetadata(final byte[] customMetadataValue) {
+        final RemoteLogSegmentMetadata.CustomMetadata customMetadata =
+                new RemoteLogSegmentMetadata.CustomMetadata(customMetadataValue);
+        final TopicPartition topicPartition = new TopicPartition("topic1", 0);
+        final TopicIdPartition topicIdPartition = new TopicIdPartition(Uuid.randomUuid(), topicPartition);
+
+        final RemoteLogSegmentId remoteLogSegmentId = new RemoteLogSegmentId(topicIdPartition, Uuid.randomUuid());
+        return new RemoteLogSegmentMetadata(
+                remoteLogSegmentId,
+                0L, // start offset
+                1L, // end offset
+                0L, // maxTimestampMs
+                0, // brokerId
+                0L, // eventTimestampMs
+                1, // segmentSizeInBytes
+                Optional.of(customMetadata), // custom metadata
+                RemoteLogSegmentState.DELETE_SEGMENT_STARTED,
+                Map.of(0, 0L)
+        );
+    }
+
+    @Test
+    public void testDeleteLogSegment() throws Exception {
+        assertTrue(isBucketEmpty());
+
+        final String logSegmentName = "/topic1-0/00000000000000000000.log";
+        final String indexSegmentName = "/topic1-0/00000000000000000000.index";
+
+        putStringToMinio("segment log", logSegmentName);
+        putStringToMinio("segment index", indexSegmentName);
+        assertTrue(isObjectExists(logSegmentName));
+        assertTrue(isObjectExists(indexSegmentName));
+
+        rsm.deleteLogSegmentData(makeMetadata(new byte[] {3}));
+        assertFalse(isObjectExists(logSegmentName));
+        assertFalse(isObjectExists(indexSegmentName));
+
+        assertTrue(isBucketEmpty());
     }
 
 }

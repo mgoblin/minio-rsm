@@ -124,7 +124,7 @@ class NameAssignerTest {
     @Test
     public void testToString() {
         final NameAssigner names = new NameAssigner(remoteLogSegmentMetadata);
-        assertEquals("PutS3Names{logSegmentName='/tieredTopic-0/00000000000000000000'}", names.toString());
+        assertEquals("NameAssigner {logSegmentName='/tieredTopic-0/00000000000000000000'}", names.toString());
     }
 
     @Test
