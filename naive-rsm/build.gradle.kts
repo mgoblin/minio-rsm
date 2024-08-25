@@ -50,8 +50,6 @@ dependencies {
 
     compileOnly("org.slf4j:slf4j-api:${slf4jVersion}")
 
-    intTestImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
-
     intTestImplementation("org.apache.kafka:kafka-storage-api:${kafkaVersion}")
     intTestImplementation("org.apache.kafka:kafka-clients:${kafkaVersion}")
 
@@ -59,7 +57,10 @@ dependencies {
     intTestImplementation("org.testcontainers:testcontainers:${minioContainerVersion}")
     intTestImplementation("org.testcontainers:junit-jupiter:${minioContainerVersion}")
 
+    intTestImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
+    intTestImplementation("org.junit.jupiter:junit-jupiter-params:${junitVersion}")
     intTestRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
     intTestRuntimeOnly("ch.qos.logback:logback-classic:${logbackVersion}")
 
 
@@ -68,9 +69,9 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-params:${junitVersion}")
-    testImplementation("org.junit.platform:junit-platform-launcher:${junitPlatformVersion}")
-
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+
+    testImplementation("org.junit.platform:junit-platform-launcher:${junitPlatformVersion}")
 
     testImplementation("org.assertj:assertj-core:${assertJVersion}")
 
