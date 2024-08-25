@@ -166,4 +166,46 @@ public class DeferredInitRsmDeleteSegmentTest {
         assertTrue(isBucketEmpty());
     }
 
+    @Test
+    public void testCustomMetadataDelete() throws Exception {
+        assertTrue(isBucketEmpty());
+
+        final String logSegmentName = "/topic1-0/00000000000000000000.log";
+        final String indexSegmentName = "/topic1-0/00000000000000000000.index";
+
+        putStringToMinio("segment log 1", logSegmentName);
+        putStringToMinio("segment index 1", indexSegmentName);
+        assertTrue(isObjectExists(logSegmentName));
+        assertTrue(isObjectExists(indexSegmentName));
+
+        rsm.deleteLogSegmentData(makeMetadata(new byte[] {1}));
+        assertFalse(isObjectExists(logSegmentName));
+        assertTrue(isObjectExists(indexSegmentName));
+    }
+
+    @Test
+    public void testDeleteTwice() throws Exception {
+        assertTrue(isBucketEmpty());
+
+        final String logSegmentName = "/topic1-0/00000000000000000000.log";
+
+        putStringToMinio("segment log 2", logSegmentName);
+        assertTrue(isObjectExists(logSegmentName));
+
+        rsm.deleteLogSegmentData(makeMetadata(new byte[] {1}));
+        assertFalse(isObjectExists(logSegmentName));
+
+        rsm.deleteLogSegmentData(makeMetadata(new byte[] {1}));
+        assertFalse(isObjectExists(logSegmentName));
+    }
+
+    @Test
+    public void testDeleteOnEmptyBucket() throws Exception {
+        assertTrue(isBucketEmpty());
+
+        rsm.deleteLogSegmentData(makeMetadata(new byte[] {63}));
+
+        assertTrue(isBucketEmpty());
+    }
+
 }
