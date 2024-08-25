@@ -27,6 +27,7 @@ import org.apache.kafka.common.Uuid;
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentId;
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentState;
+import org.apache.kafka.server.log.remote.storage.RemoteResourceNotFoundException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
 
 
@@ -36,11 +37,14 @@ import io.minio.PutObjectArgs;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_ACCESS_KEY;
 import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_AUTO_CREATE_BUCKET;
@@ -165,5 +169,16 @@ public class DeferredInitRsmFetchIndexIntTest {
 
         final var inputStream = rsm.fetchIndex(makeMetadata(new byte[] {63}), indexType);
         assertTrue(inputStream.readAllBytes().length > 0);
+    }
+
+    @Test
+    public void testFetchIndexWithoutMetadata() {
+        final var exception = assertThrows(
+                RemoteResourceNotFoundException.class,
+                () -> rsm.fetchIndex(makeMetadata(new byte[] {0}), RemoteStorageManager.IndexType.OFFSET));
+        assertEquals(
+                "Index OFFSET for /topic1-0/00000000000000000000.index is not found "
+                         + "because have empty metadata flag",
+                exception.getMessage());
     }
 }
