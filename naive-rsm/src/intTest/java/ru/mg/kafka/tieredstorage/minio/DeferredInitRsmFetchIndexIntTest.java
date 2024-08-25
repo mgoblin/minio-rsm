@@ -17,12 +17,27 @@
 package ru.mg.kafka.tieredstorage.minio;
 
 import java.util.Map;
+import java.util.Optional;
 
+import org.apache.commons.io.IOUtils;
+
+import org.apache.kafka.common.TopicIdPartition;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.Uuid;
+import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentId;
+import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
+import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentState;
+import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
+
+
+import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -78,8 +93,77 @@ public class DeferredInitRsmFetchIndexIntTest {
         minIOContainer.close();
     }
 
-    @Test
-    public void testFetchIndex() {
+    private RemoteLogSegmentMetadata makeMetadata(final byte[] customMetadataValue) {
+        final RemoteLogSegmentMetadata.CustomMetadata customMetadata =
+                new RemoteLogSegmentMetadata.CustomMetadata(customMetadataValue);
+        final TopicPartition topicPartition = new TopicPartition("topic1", 0);
+        final TopicIdPartition topicIdPartition = new TopicIdPartition(Uuid.randomUuid(), topicPartition);
 
+        final RemoteLogSegmentId remoteLogSegmentId = new RemoteLogSegmentId(topicIdPartition, Uuid.randomUuid());
+        return new RemoteLogSegmentMetadata(
+                remoteLogSegmentId,
+                0L, // start offset
+                1L, // end offset
+                0L, // maxTimestampMs
+                0, // brokerId
+                0L, // eventTimestampMs
+                1, // segmentSizeInBytes
+                Optional.of(customMetadata), // custom metadata
+                RemoteLogSegmentState.DELETE_SEGMENT_STARTED,
+                Map.of(0, 0L)
+        );
+    }
+
+    private void putStringToMinio(final String content, final String objectName) throws Exception {
+        try (final var is = IOUtils.toInputStream(content, "UTF-8")) {
+            final var putArgs = PutObjectArgs.builder()
+                    .bucket(BUCKET_NAME_VAL)
+                    .object(objectName)
+                    .stream(is, is.available(), -1)
+                    .build();
+            minioClient.putObject(putArgs);
+        }
+    }
+
+    private boolean isObjectExists(final String objectName) {
+        try {
+            final var getObjectArgs = GetObjectArgs.builder()
+                    .bucket(BUCKET_NAME_VAL)
+                    .object(objectName)
+                    .build();
+            final var response = minioClient.getObject(getObjectArgs);
+
+            return response.readAllBytes().length > 0;
+        } catch (final Exception ex) {
+            return false;
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(RemoteStorageManager.IndexType.class)
+    public void testFetchIndex(final RemoteStorageManager.IndexType indexType) throws Exception {
+        final String indexSegmentName = "/topic1-0/00000000000000000000.index";
+        final String timeIndexSegmentName = "topic1-0/00000000000000000000.timeindex";
+        final String snapshotSegmentName = "topic1-0/00000000000000000000.snapshot";
+        final String txnIndexSegmentName = "topic1-0/00000000000000000000.txnindex";
+        final String leaderEpochSegmentName = "topic1-0/00000000000000000000-leader-epoch-checkpoint";
+
+        putStringToMinio("segment index", indexSegmentName);
+        assertTrue(isObjectExists(indexSegmentName));
+
+        putStringToMinio("segment time index", timeIndexSegmentName);
+        assertTrue(isObjectExists(timeIndexSegmentName));
+
+        putStringToMinio("segment snapshot", snapshotSegmentName);
+        assertTrue(isObjectExists(snapshotSegmentName));
+
+        putStringToMinio("segment txn index", txnIndexSegmentName);
+        assertTrue(isObjectExists(txnIndexSegmentName));
+
+        putStringToMinio("segment leader epoch", leaderEpochSegmentName);
+        assertTrue(isObjectExists(txnIndexSegmentName));
+
+        final var inputStream = rsm.fetchIndex(makeMetadata(new byte[] {63}), indexType);
+        assertTrue(inputStream.readAllBytes().length > 0);
     }
 }
