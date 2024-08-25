@@ -36,7 +36,7 @@ import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_BUCK
 import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_S3_ENDPOINT_URL;
 import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_SECRET_KEY;
 
-public class DeferredInitRsmConfigIntegrationTest {
+public class DeferredInitRsmConfigIntegrationIntTest {
 
     private DeferredInitRsm rsm;
 

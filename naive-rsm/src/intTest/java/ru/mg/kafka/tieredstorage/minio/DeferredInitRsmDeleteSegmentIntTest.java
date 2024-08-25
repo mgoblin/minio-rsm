@@ -48,7 +48,7 @@ import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_S3_E
 import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_SECRET_KEY;
 
 @Testcontainers
-public class DeferredInitRsmDeleteSegmentTest {
+public class DeferredInitRsmDeleteSegmentIntTest {
     public static final String MINIO_CONTAINER_NAME = "minio/minio:RELEASE.2023-09-04T19-57-37Z";
     public static final String MINIO_USER = "adminadmin";
     public static final String MINIO_PASSWORD = "adminadmin";
