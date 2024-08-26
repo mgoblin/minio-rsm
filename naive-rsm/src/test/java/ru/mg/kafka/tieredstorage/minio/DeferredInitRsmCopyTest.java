@@ -53,7 +53,8 @@ public class DeferredInitRsmCopyTest {
     public void testCopyLogSegmentData() throws Exception {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm()) {
+            remoteStorageManager.setBackend(backendMock);
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -89,7 +90,8 @@ public class DeferredInitRsmCopyTest {
     public void testCopyLogSegmentDataWithoutTnxIndex() throws Exception {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm()) {
+            remoteStorageManager.setBackend(backendMock);
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -125,7 +127,8 @@ public class DeferredInitRsmCopyTest {
     public void testCopySegmentDataOnIOException() throws Exception {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm()) {
+            remoteStorageManager.setBackend(backendMock);
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             doThrow(RemoteStorageException.class)

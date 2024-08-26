@@ -58,8 +58,8 @@ public class DeferredInitRsmConfigTest {
         final var backendMock = new MockedBackend(MINIMAL_CFG);
         final var bucketMock = backendMock.bucket();
 
-        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
-
+        try (var remoteStorageManager = new DeferredInitRsm()) {
+            remoteStorageManager.setBackend(backendMock);
             remoteStorageManager.configure(MINIMAL_CFG);
 
             verify(bucketMock, times(1)).tryToMakeBucket();
@@ -73,9 +73,9 @@ public class DeferredInitRsmConfigTest {
         doThrow(new RecoverableConfigurationFailException(new IOException()))
                 .when(backendMock.bucket()).tryToMakeBucket();
 
-        try (final var remoteStorageManager = new DeferredInitRsm(backendMock)) {
-            assertTrue(remoteStorageManager.isInitialized());
+        try (final var remoteStorageManager = new DeferredInitRsm()) {
 
+            remoteStorageManager.setBackend(backendMock);
             remoteStorageManager.configure(MINIMAL_CFG);
             assertFalse(remoteStorageManager.isInitialized());
         }

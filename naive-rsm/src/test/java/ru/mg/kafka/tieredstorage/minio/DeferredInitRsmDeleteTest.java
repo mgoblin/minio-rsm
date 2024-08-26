@@ -51,7 +51,8 @@ public class DeferredInitRsmDeleteTest {
     public void testDeleteSegment() throws Exception {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm()) {
+            remoteStorageManager.setBackend(backendMock);
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();

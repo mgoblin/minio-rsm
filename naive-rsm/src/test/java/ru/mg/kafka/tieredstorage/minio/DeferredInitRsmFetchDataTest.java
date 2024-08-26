@@ -60,7 +60,8 @@ public class DeferredInitRsmFetchDataTest {
     public void testFetchSegmentFromStartPosition() throws Exception {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm()) {
+            remoteStorageManager.setBackend(backendMock);
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -99,7 +100,8 @@ public class DeferredInitRsmFetchDataTest {
     public void testFetchLogSegmentFromStartPositionEmptyMetadata() {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm()) {
+            remoteStorageManager.setBackend(backendMock);
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -122,7 +124,8 @@ public class DeferredInitRsmFetchDataTest {
     public void testFetchLogSegmentFromStartPositionWithNoCopySegmentFlagMetadata() {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm()) {
+            remoteStorageManager.setBackend(backendMock);
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -165,7 +168,8 @@ public class DeferredInitRsmFetchDataTest {
                         0
                 ));
 
-        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm()) {
+            remoteStorageManager.setBackend(backendMock);
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             when(backendMock.fetcher().fetchLogSegmentData(any(), any(Integer.class), any(Integer.class)))
@@ -185,7 +189,8 @@ public class DeferredInitRsmFetchDataTest {
     public void testFetchSegmentFromStartAndEndPosition() throws Exception {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm()) {
+            remoteStorageManager.setBackend(backendMock);
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -225,7 +230,8 @@ public class DeferredInitRsmFetchDataTest {
     public void testFetchLogSegmentFromStartToEndPositionEmptyMetadata() {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm()) {
+            remoteStorageManager.setBackend(backendMock);
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();
@@ -248,7 +254,8 @@ public class DeferredInitRsmFetchDataTest {
     public void testFetchLogSegmentFromStartToEndPositionWithNoCopySegmentFlagMetadata() {
         final var backendMock = new MockedBackend(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
-        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm()) {
+            remoteStorageManager.setBackend(backendMock);
             remoteStorageManager.configure(NOT_AUTO_CREATE_BUCKET_CONFIG);
 
             final RemoteLogSegmentMetadata remoteLogSegmentMetadata = MetadataUtils.remoteLogSegmentMetadata();

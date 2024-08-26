@@ -48,7 +48,8 @@ public class DeferredInitRsmInitTest {
 
         final var backendMock = new MockedBackend(cfg);
 
-        try (var remoteStorageManager = new DeferredInitRsm(backendMock)) {
+        try (var remoteStorageManager = new DeferredInitRsm()) {
+            remoteStorageManager.setBackend(backendMock);
             remoteStorageManager.configure(cfg);
 
             assertTrue(remoteStorageManager.isInitialized());

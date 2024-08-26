@@ -65,18 +65,9 @@ public class DeferredInitRsm
 
     private Map<String, ?> configs;
 
-    /**
-     * For testing purposes
-     * @param backend backend mock
-     */
-    DeferredInitRsm(final RemoteStorageBackend backend) {
-        this(backend, true);
-    }
-
-    private DeferredInitRsm(final RemoteStorageBackend backend, final boolean initialized) {
-        Objects.requireNonNull(backend);
+    // for testing
+    void setBackend(final RemoteStorageBackend backend) {
         this.backend = backend;
-        this.initialized = initialized;
     }
 
     public DeferredInitRsm() {
@@ -220,13 +211,13 @@ public class DeferredInitRsm
         if (!initialized) {
             log.debug("Try to configure remote storage manager {}", DeferredInitRsm.class);
 
-            initBackend(configs);
+            initBackend(this.configs);
 
             log.debug("Backend {} configuration success.",
                     this.backend.getClass());
         }
 
-        initialized = tryToMakeBucket(configs);
+        initialized = tryToMakeBucket(this.configs);
     }
 
     /**
@@ -235,7 +226,10 @@ public class DeferredInitRsm
      */
     @Override
     public boolean isInitialized() {
-        return initialized;
+        if (initialized & !super.isInitialized()) {
+            throw new IllegalStateException("RemoteStorageManager initialization state corrupted");
+        }
+        return initialized & super.isInitialized();
     }
 
     // for testing
