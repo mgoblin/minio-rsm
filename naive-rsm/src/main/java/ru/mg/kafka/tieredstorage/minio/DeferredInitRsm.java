@@ -196,7 +196,7 @@ public class DeferredInitRsm
         log.trace("Closing RemoteStorageManager");
         if (initialized) {
             log.trace("Close initialized RemoteStorageManager.");
-            backend = null;
+            super.close();
             initialized = false;
         } else {
             log.trace("RemoteStorageManager is uninitialized. Close do nothing.");
