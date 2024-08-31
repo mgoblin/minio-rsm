@@ -127,7 +127,7 @@ public class DeferredRsmInitFetchSegmentData1Test {
     }
 
     @Test
-    public void testFetchSegmentData() throws Exception {
+    public void testFetchSegmentDataFromStart() throws Exception {
         final String segmentDataName = "/topic1-0/00000000000000000000.log";
         final String segmentData = "segment data";
         putStringToMinio(segmentData, segmentDataName);
@@ -142,7 +142,7 @@ public class DeferredRsmInitFetchSegmentData1Test {
     }
 
     @Test
-    public void testFetchSegmentDataWithoutMetadata() throws Exception {
+    public void testFetchSegmentDataWithoutMetadataFromStart() throws Exception {
         final String segmentDataName = "/topic1-0/00000000000000000000.log";
         final String segmentData = "segment data";
         putStringToMinio(segmentData, segmentDataName);
@@ -165,10 +165,57 @@ public class DeferredRsmInitFetchSegmentData1Test {
     }
 
     @Test
-    public void testFetchSegmentDataNoData() {
+    public void testFetchSegmentDataNoDataFromStart() {
         assertThrows(
             RemoteResourceNotFoundException.class,
             () -> rsm.fetchLogSegment(makeMetadata(new byte[]{1}), 0)
+        );
+    }
+
+    @Test
+    public void testFetchSegmentDataFromStartToEnd() throws Exception {
+        final String segmentDataName = "/topic1-0/00000000000000000000.log";
+        final String segmentData = "segment data1";
+        putStringToMinio(segmentData, segmentDataName);
+
+        try (final InputStream is = rsm.fetchLogSegment(
+                makeMetadata(new byte[] {1}),
+                0,
+                2)) {
+            final byte[] content = is.readAllBytes();
+            final String strContent = new String(content);
+            assertEquals(segmentData.substring(0, 2), strContent);
+        }
+    }
+
+    @Test
+    public void testFetchSegmentDataWithoutMetadataFromStartToEnd() throws Exception {
+        final String segmentDataName = "/topic1-0/00000000000000000000.log";
+        final String segmentData = "segment data";
+        putStringToMinio(segmentData, segmentDataName);
+
+        final var ex = assertThrows(
+                RemoteResourceNotFoundException.class,
+                () -> {
+                    try (final InputStream is = rsm.fetchLogSegment(makeMetadata(new byte[] {0}), 0, 2)) {
+                        final byte[] content = is.readAllBytes();
+                        final String strContent = new String(content);
+                        assertEquals(segmentData, strContent);
+                    }
+                });
+
+        assertEquals(
+                "Fetch segment /topic1-0/00000000000000000000.log "
+                        + "have empty data exists metadata flag "
+                        + "ByteEncodedMetadata{value=0}",
+                ex.getMessage());
+    }
+
+    @Test
+    public void testFetchSegmentDataNoDataFromStartToEnd() {
+        assertThrows(
+                RemoteResourceNotFoundException.class,
+                () -> rsm.fetchLogSegment(makeMetadata(new byte[]{1}), 0, 3)
         );
     }
 }
