@@ -29,6 +29,7 @@ import org.apache.kafka.common.Uuid;
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentId;
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
 import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentState;
+import org.apache.kafka.server.log.remote.storage.RemoteResourceNotFoundException;
 
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -40,6 +41,7 @@ import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_ACCESS_KEY;
 import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_AUTO_CREATE_BUCKET;
@@ -137,5 +139,28 @@ public class DeferredRsmInitFetchSegmentData1Test {
             final String strContent = new String(content);
             assertEquals(segmentData, strContent);
         }
+    }
+
+    @Test
+    public void testFetchSegmentDataWithoutMetadata() throws Exception {
+        final String segmentDataName = "/topic1-0/00000000000000000000.log";
+        final String segmentData = "segment data";
+        putStringToMinio(segmentData, segmentDataName);
+
+        final var ex = assertThrows(
+            RemoteResourceNotFoundException.class,
+            () -> {
+                try (final InputStream is = rsm.fetchLogSegment(makeMetadata(new byte[] {0}), 0)) {
+                    final byte[] content = is.readAllBytes();
+                    final String strContent = new String(content);
+                    assertEquals(segmentData, strContent);
+                }
+            });
+
+        assertEquals(
+                "Fetch segment /topic1-0/00000000000000000000.log "
+                        + "have empty data exists metadata flag "
+                        + "ByteEncodedMetadata{value=0}",
+                ex.getMessage());
     }
 }
