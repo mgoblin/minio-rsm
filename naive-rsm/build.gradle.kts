@@ -133,17 +133,17 @@ tasks.create<JacocoReport>("integrationTestReport") {
     }
 }
 
-//tasks.jacocoTestCoverageVerification {
-//    executionData(tasks.test.get())
-//    violationRules {
-//        rule {
-//            element = "CLASS"
-//            limit {
-//                counter = "BRANCH"
-//                value = "COVEREDRATIO"
-//                minimum = "1.0".toBigDecimal()
-//            }
-//        }
-//    }
-//}
+tasks.jacocoTestCoverageVerification {
+    executionData(tasks.test.get())
+    violationRules {
+        rule {
+            element = "CLASS"
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = "1.0".toBigDecimal()
+            }
+        }
+    }
+}
 
