@@ -244,4 +244,9 @@ public class DeferredInitRsm
     public Map<String, ?> getConfigs() {
         return new HashMap<>(configs);
     }
+
+    // for testing
+    void setInitialized() {
+        initialized = true;
+    }
 }

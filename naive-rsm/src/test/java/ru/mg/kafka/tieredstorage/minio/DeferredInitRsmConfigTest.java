@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -132,6 +133,22 @@ public class DeferredInitRsmConfigTest {
 
             remoteStorageManager.ensureInitialized();
             assertTrue(remoteStorageManager.isInitialized());
+        }
+    }
+
+    @Test
+    public void testIllegalState() {
+        try (final var remoteStorageManager = new DeferredInitRsm()) {
+            assertFalse(remoteStorageManager.isInitialized());
+
+            remoteStorageManager.setInitialized();
+
+            final var ex = assertThrows(
+                    IllegalStateException.class,
+                    remoteStorageManager::isInitialized);
+            assertEquals(
+                    "RemoteStorageManager initialization state corrupted",
+                    ex.getMessage());
         }
     }
 }
