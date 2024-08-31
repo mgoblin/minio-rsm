@@ -16,9 +16,22 @@
 
 package ru.mg.kafka.tieredstorage.minio;
 
+import java.io.InputStream;
+
 import java.util.Map;
+import java.util.Optional;
+
+import org.apache.commons.io.IOUtils;
+
+import org.apache.kafka.common.TopicIdPartition;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.Uuid;
+import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentId;
+import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentMetadata;
+import org.apache.kafka.server.log.remote.storage.RemoteLogSegmentState;
 
 import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_ACCESS_KEY;
 import static ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig.MINIO_AUTO_CREATE_BUCKET;
@@ -78,8 +92,50 @@ public class DeferredRsmInitFetchSegmentData1Test {
         minIOContainer.close();
     }
 
-    @Test
-    public void testFetchSegmentData() {
+    private RemoteLogSegmentMetadata makeMetadata(final byte[] customMetadataValue) {
+        final RemoteLogSegmentMetadata.CustomMetadata customMetadata =
+                new RemoteLogSegmentMetadata.CustomMetadata(customMetadataValue);
+        final TopicPartition topicPartition = new TopicPartition("topic1", 0);
+        final TopicIdPartition topicIdPartition = new TopicIdPartition(Uuid.randomUuid(), topicPartition);
 
+        final RemoteLogSegmentId remoteLogSegmentId = new RemoteLogSegmentId(topicIdPartition, Uuid.randomUuid());
+        return new RemoteLogSegmentMetadata(
+                remoteLogSegmentId,
+                0L, // start offset
+                13L, // end offset
+                0L, // maxTimestampMs
+                0, // brokerId
+                0L, // eventTimestampMs
+                13, // segmentSizeInBytes
+                Optional.of(customMetadata), // custom metadata
+                RemoteLogSegmentState.COPY_SEGMENT_FINISHED,
+                Map.of(0, 0L)
+        );
+    }
+
+    private void putStringToMinio(final String content, final String objectName) throws Exception {
+        try (final var is = IOUtils.toInputStream(content, "UTF-8")) {
+            final var putArgs = PutObjectArgs.builder()
+                    .bucket(BUCKET_NAME_VAL)
+                    .object(objectName)
+                    .stream(is, is.available(), -1)
+                    .build();
+            minioClient.putObject(putArgs);
+        }
+    }
+
+    @Test
+    public void testFetchSegmentData() throws Exception {
+        final String segmentDataName = "/topic1-0/00000000000000000000.log";
+        final String segmentData = "segment data";
+        putStringToMinio(segmentData, segmentDataName);
+
+        try (final InputStream is = rsm.fetchLogSegment(
+                makeMetadata(new byte[] {1}),
+                0)) {
+            final byte[] content = is.readAllBytes();
+            final String strContent = new String(content);
+            assertEquals(segmentData, strContent);
+        }
     }
 }
