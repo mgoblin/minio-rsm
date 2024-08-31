@@ -187,21 +187,6 @@ public class FetcherSegmentDataTest {
     }
 
     @Test
-    public void testFetchLogSegmentDataFromStart() throws Exception {
-        final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
-        final var minioClientMock = mock(MinioClient.class);
-
-        when(minioClientMock.getObject(any())).thenReturn(new GetObjectResponse(
-                Headers.of(), "bucket", "region", "object", InputStream.nullInputStream()
-        ));
-
-        final Fetcher fetcher = new Fetcher(config, minioClientMock);
-
-        assertNotNull(fetcher.fetchLogSegmentData("object", 0));
-        verify(minioClientMock, times(1)).getObject(any());
-    }
-
-    @Test
     public void testFetchLogSegmentDataFromStartToEnd() throws Exception {
         final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
         final var minioClientMock = mock(MinioClient.class);

@@ -41,17 +41,6 @@ public interface IFetcher {
             final int endPosition) throws RemoteStorageException;
 
     /**
-     * Fetches log segment data from S3 storage from start position to end of data
-     * @param segmentObjectName object name
-     * @param startPosition start position
-     * @return Input stream with segment data
-     * @throws RemoteStorageException on error
-     */
-    InputStream fetchLogSegmentData(
-            final String segmentObjectName,
-            final int startPosition) throws RemoteStorageException;
-
-    /**
      * Fetches index data from remote S3 storage.
      *
      * @param indexObjectName object name

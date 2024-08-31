@@ -140,31 +140,6 @@ public class Fetcher extends BackendPart implements IFetcher {
     }
 
     /**
-     * Fetches log segment data from Minio S3 from start position
-     *
-     * @param segmentObjectName object name
-     * @param startPosition start position
-     * @return log segment input stream
-     * @throws RemoteStorageException on error
-     */
-    public InputStream fetchLogSegmentData(
-            final String segmentObjectName,
-            final int startPosition) throws RemoteStorageException {
-
-        final byte[] body = fetchAllBytes(segmentObjectName);
-
-        final byte[] subArray = Arrays.copyOfRange(body, startPosition, body.length);
-        log.debug("Fetch log segment data from start position {} with path {} success. "
-                        + "Fetched {} bytes, trimmed to {}.",
-                startPosition,
-                segmentObjectName,
-                body.length,
-                subArray.length);
-
-        return new ByteArrayInputStream(subArray);
-    }
-
-    /**
      * Fetches index by type from S3 Minio
      *
      * @param indexObjectName object name
