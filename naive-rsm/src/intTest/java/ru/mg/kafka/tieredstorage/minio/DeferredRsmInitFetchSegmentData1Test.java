@@ -163,4 +163,12 @@ public class DeferredRsmInitFetchSegmentData1Test {
                         + "ByteEncodedMetadata{value=0}",
                 ex.getMessage());
     }
+
+    @Test
+    public void testFetchSegmentDataNoData() {
+        assertThrows(
+            RemoteResourceNotFoundException.class,
+            () -> rsm.fetchLogSegment(makeMetadata(new byte[]{1}), 0)
+        );
+    }
 }

@@ -24,6 +24,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
+import org.apache.kafka.server.log.remote.storage.RemoteResourceNotFoundException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageManager;
 
@@ -103,7 +104,11 @@ public class Fetcher extends BackendPart implements IFetcher {
                     errorCode,
                     errorMessage,
                     e);
-            throw new RemoteStorageException(e);
+            if ("NoSuchKey".equals(errorCode)) {
+                throw new RemoteResourceNotFoundException(e);
+            } else {
+                throw new RemoteStorageException(e);
+            }
         } catch (final NoSuchAlgorithmException | InvalidKeyException
                        | XmlParserException | InternalException | InvalidResponseException e) {
             log.error("Fetch log segment data from object {} failed. Internal error occurred.", segmentObjectName, e);
