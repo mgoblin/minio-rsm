@@ -34,7 +34,6 @@ import ru.mg.kafka.tieredstorage.minio.backend.naive.Uploader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO Add integration tests
 /**
  * Straightforward Kafka RemoteStorageManager implementation with Minio S3
  * as tiered storage
