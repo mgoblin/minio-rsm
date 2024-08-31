@@ -246,7 +246,7 @@ public class DeferredInitRsm
     }
 
     // for testing
-    void setInitialized() {
-        initialized = true;
+    void setInitialized(final boolean initialized) {
+        this.initialized = initialized;
     }
 }

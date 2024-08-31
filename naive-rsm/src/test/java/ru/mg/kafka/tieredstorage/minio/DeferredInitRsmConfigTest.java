@@ -141,7 +141,7 @@ public class DeferredInitRsmConfigTest {
         try (final var remoteStorageManager = new DeferredInitRsm()) {
             assertFalse(remoteStorageManager.isInitialized());
 
-            remoteStorageManager.setInitialized();
+            remoteStorageManager.setInitialized(true);
 
             final var ex = assertThrows(
                     IllegalStateException.class,

@@ -93,4 +93,18 @@ public class DeferredInitRsmConfigureTest {
         }
     }
 
+    @Test
+    public void testInitializeTwice() {
+        try (final var remoteStorageManager = new DeferredInitRsm()) {
+            assertFalse(remoteStorageManager.isInitialized());
+
+            remoteStorageManager.setBackend(new MockedBackend(MINIMAL_CFG));
+            remoteStorageManager.configure(MINIMAL_CFG);
+            assertTrue(remoteStorageManager.isInitialized());
+
+            remoteStorageManager.configure(MINIMAL_CFG);
+            assertTrue(remoteStorageManager.isInitialized());
+        }
+    }
+
 }
