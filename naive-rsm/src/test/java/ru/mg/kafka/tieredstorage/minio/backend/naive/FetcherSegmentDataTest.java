@@ -23,6 +23,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.kafka.server.log.remote.storage.RemoteResourceNotFoundException;
 import org.apache.kafka.server.log.remote.storage.RemoteStorageException;
 
 import io.minio.GetObjectResponse;
@@ -36,9 +37,11 @@ import ru.mg.kafka.tieredstorage.minio.config.ConnectionConfig;
 
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
+import okhttp3.MediaType;
+import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.Response;
-
+import okhttp3.ResponseBody;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -201,4 +204,51 @@ public class FetcherSegmentDataTest {
         verify(minioClientMock, times(1)).getObject(any());
     }
 
+    @Test
+    public void testFetchLogSegmentDataFromStartDataNotFound() throws Exception {
+        final ConnectionConfig config = new ConnectionConfig(NOT_AUTO_CREATE_BUCKET_CONFIG);
+        final var minioClientMock = mock(MinioClient.class);
+
+        when(minioClientMock.getObject(any())).thenAnswer(
+                invocationOnMock -> {
+                    final ErrorResponse errorResponse = new ErrorResponse(
+                            "NoSuchKey",
+                            "Object not found",
+                            "bucket",
+                            "object",
+                            "resource",
+                            "requestid-1",
+                            "hostId1"
+                    );
+                    final Response response = new Response(
+                        new Request(
+                                HttpUrl.get("http://localhost"),
+                                "GET",
+                                Headers.of(),
+                                null,
+                                Map.of()),
+                        Protocol.HTTP_1_1,
+                        "message",
+                        404,
+                        null,
+                        Headers.of(),
+                        ResponseBody.create("", MediaType.parse("application/json")),
+                        null, null, null, 0, 0, null
+                    );
+
+                    throw new ErrorResponseException(
+                            errorResponse,
+                            response,
+                            "trace"
+                    );
+                }
+        );
+
+        final Fetcher fetcher = new Fetcher(config, minioClientMock);
+
+        assertThrows(
+                RemoteResourceNotFoundException.class,
+                () -> fetcher.fetchLogSegmentData("object", 0, 500));
+        verify(minioClientMock, times(1)).getObject(any());
+    }
 }
