@@ -3,7 +3,11 @@
 cwd=$(pwd)
 pushd "$cwd" || exit
 
+source ./env.sh
+
 cd "$KAFKA_BASE_DIR" || exit
+
+ls -la || exit
 
 bin/kafka-server-stop.sh
 

@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
  *  * {@link Fetcher}.
  *  * </p>
  */
-class NaiveRsm implements org.apache.kafka.server.log.remote.storage.RemoteStorageManager {
+public class NaiveRsm implements org.apache.kafka.server.log.remote.storage.RemoteStorageManager {
     /** Logger **/
     private static final Logger log = LoggerFactory.getLogger(NaiveRsm.class);
 
