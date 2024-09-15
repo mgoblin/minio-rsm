@@ -149,7 +149,7 @@ public class NaiveRsm implements org.apache.kafka.server.log.remote.storage.Remo
         log.trace("Start to fetching log segment with metadata {} and segment from start position {}",
                 remoteLogSegmentMetadata,
                 startPosition);
-        final int endPosition = remoteLogSegmentMetadata.segmentSizeInBytes() - 1;
+        final int endPosition = remoteLogSegmentMetadata.segmentSizeInBytes();
         return fetchLogSegment(remoteLogSegmentMetadata, startPosition, endPosition);
     }
 

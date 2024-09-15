@@ -79,7 +79,7 @@ public class NaiveRsmFetchDataTest {
                             0
                     ));
 
-            when(backendMock.fetcher().fetchLogSegmentData(any(), eq(0), eq(9)))
+            when(backendMock.fetcher().fetchLogSegmentData(any(), eq(0), eq(10)))
                     .thenReturn(InputStream.nullInputStream());
 
 
@@ -89,7 +89,7 @@ public class NaiveRsmFetchDataTest {
             assertNotNull(result);
 
             final IFetcher verify = verify(backendMock.fetcher(), times(1));
-            try (final var fetch = verify.fetchLogSegmentData(any(), eq(0), eq(9))) {
+            try (final var fetch = verify.fetchLogSegmentData(any(), eq(0), eq(10))) {
                 assertNull(fetch);
             }
         }

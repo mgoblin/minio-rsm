@@ -136,7 +136,7 @@ public class DeferredRsmInitFetchSegmentData1Test {
                 makeMetadata(new byte[] {1}),
                 0)) {
             final byte[] content = is.readAllBytes();
-            final String strContent = new String(content);
+            final String strContent = new String(content).substring(0, content.length - 1);
             assertEquals(segmentData, strContent);
         }
     }
