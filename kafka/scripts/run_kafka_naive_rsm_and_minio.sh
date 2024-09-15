@@ -5,14 +5,15 @@ pushd "$cwd" || exit
 
 source ./env.sh
 
-./steps/run_minio_server.sh
-
-./steps/prepare_kafka.sh
+cd ./steps || exit
+./run_minio_server.sh
+./prepare_kafka_storage.sh
+./copy_libs.sh
+cd .. || exit
 
 rm -rf "${KAFKA_BASE_DIR:?}"/logs/*
 
 cp "$cwd"/../config/kraft/naive_rsm_server.properties "$KAFKA_BASE_DIR/config/kraft/naive_rsm_server.properties"
-./steps/copy_libs.sh
 
 cd "$KAFKA_BASE_DIR" || exit
 

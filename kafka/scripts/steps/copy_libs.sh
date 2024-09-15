@@ -3,7 +3,7 @@
 cwd=$(pwd)
 pushd "$cwd" || exit
 
-source ./env.sh
+source ../env.sh
 
 if [ ! -f "$DISTRIBUTION_FILE" ]
 then

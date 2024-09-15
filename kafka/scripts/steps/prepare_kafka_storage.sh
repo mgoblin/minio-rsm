@@ -3,13 +3,11 @@
 cwd=$(pwd)
 pushd "$cwd" || exit
 
-source ./env.sh
+source ../env.sh
 
 rm -rf "${KAFKA_DATA_DIR:?}"/*
 
-cp "$cwd"/../config/kraft/server.properties "$KAFKA_BASE_DIR/config/kraft/server.properties"
-
-./steps/copy_libs.sh
+cp ../../config/kraft/server.properties "$KAFKA_BASE_DIR/config/kraft/server.properties"
 
 cd "$KAFKA_BASE_DIR" || exit
 UUID="$(bin/kafka-storage.sh random-uuid)"
