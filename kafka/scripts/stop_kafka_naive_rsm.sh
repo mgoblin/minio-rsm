@@ -17,4 +17,7 @@ pid=$(pgrep minio)
 
 kill "$pid"
 
+cd "$MINIO_DATA_DIR" || exit
+rm -rf ./*
+
 popd || exit
