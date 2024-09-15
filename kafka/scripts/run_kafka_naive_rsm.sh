@@ -19,12 +19,4 @@ bin/kafka-server-start.sh -daemon \
 sleep 5s
 timeout 3m grep -q 'Kafka Server started' <(tail -f "$KAFKA_BASE_DIR/logs/server.log") || exit 1
 
-bin/kafka-server-stop.sh
-
-cd "$cwd" || exit
-
-pid=$(pgrep minio)
-
-kill "$pid"
-
 popd || exit
