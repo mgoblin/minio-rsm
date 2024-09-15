@@ -3,7 +3,7 @@
 cwd=$(pwd)
 pushd "$cwd" || exit
 
-source ./env.sh
+source ../env.sh
 cd "$KAFKA_BASE_DIR" || exit
 
 bin/kafka-producer-perf-test.sh \
