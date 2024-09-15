@@ -25,5 +25,6 @@ sleep 5s
 timeout 3m grep -q 'Kafka Server started' <(tail -f "$KAFKA_BASE_DIR/logs/server.log") || exit 1
 
 bin/kafka-server-stop.sh
+timeout 30s grep -q 'Stopping SharedServer' <(tail -f "$KAFKA_BASE_DIR/logs/server.log") || exit 1
 
 popd || exit

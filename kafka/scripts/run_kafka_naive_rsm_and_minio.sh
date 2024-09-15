@@ -8,7 +8,6 @@ source ./env.sh
 ./steps/run_minio_server.sh
 
 ./steps/prepare_kafka.sh
-timeout 30s grep -q 'Stopping SharedServer' <(tail -f "$KAFKA_BASE_DIR/logs/server.log") || exit 1
 
 rm -rf "${KAFKA_BASE_DIR:?}"/logs/*
 
@@ -22,7 +21,7 @@ bin/kafka-server-start.sh -daemon \
 sleep 1s
 timeout 30s grep -q 'Kafka Server started' <(tail -f "$KAFKA_BASE_DIR/logs/server.log") || exit 1
 
-cd "$cwd" || exit
-./steps/create_tiered_topic.sh
+cd "$cwd"/steps || exit
+./create_tiered_topic.sh
 
 popd || exit
