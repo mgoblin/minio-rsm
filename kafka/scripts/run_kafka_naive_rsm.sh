@@ -5,18 +5,21 @@ pushd "$cwd" || exit
 
 source ./env.sh
 
+./steps/run_minio_server.sh
+
+./steps/prepare_kafka.sh
+timeout 30s grep -q 'Stopping SharedServer' <(tail -f "$KAFKA_BASE_DIR/logs/server.log") || exit 1
+
 rm -rf "${KAFKA_BASE_DIR:?}"/logs/*
 
 cp "$cwd"/../config/kraft/naive_rsm_server.properties "$KAFKA_BASE_DIR/config/kraft/naive_rsm_server.properties"
-./copy_libs.sh
-
-./run_minio_server.sh
+./steps/copy_libs.sh
 
 cd "$KAFKA_BASE_DIR" || exit
 
 bin/kafka-server-start.sh -daemon \
 "$KAFKA_BASE_DIR/config/kraft/naive_rsm_server.properties"
-sleep 5s
-timeout 3m grep -q 'Kafka Server started' <(tail -f "$KAFKA_BASE_DIR/logs/server.log") || exit 1
+sleep 1s
+timeout 30s grep -q 'Kafka Server started' <(tail -f "$KAFKA_BASE_DIR/logs/server.log") || exit 1
 
 popd || exit

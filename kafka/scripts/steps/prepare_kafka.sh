@@ -9,7 +9,7 @@ rm -rf "${KAFKA_DATA_DIR:?}"/*
 
 cp "$cwd"/../config/kraft/server.properties "$KAFKA_BASE_DIR/config/kraft/server.properties"
 
-./copy_libs.sh
+./steps/copy_libs.sh
 
 cd "$KAFKA_BASE_DIR" || exit
 UUID="$(bin/kafka-storage.sh random-uuid)"
