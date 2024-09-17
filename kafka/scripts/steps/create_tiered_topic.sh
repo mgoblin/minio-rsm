@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/bash -e
 
 cwd=$(pwd)
-pushd "$cwd" || exit
+pushd "$cwd" > /dev/null
 
 source ../env.sh
 
@@ -16,4 +16,4 @@ bin/kafka-topics.sh --bootstrap-server localhost:9092 \
     --config retention.ms=-1 \
     --config local.retention.ms=-1
 
-popd || exit
+popd > /dev/null
