@@ -10,9 +10,8 @@ cd ./steps || exit
 ./prepare_kafka_storage.sh
 ./copy_libs.sh
 ./clear_kafka_logs.sh
+./copy_kafka_config_file.sh kraft/naive_rsm_server.properties
 cd .. || exit
-
-cp "$cwd"/../config/kraft/naive_rsm_server.properties "$KAFKA_BASE_DIR/config/kraft/naive_rsm_server.properties"
 
 cd "$KAFKA_BASE_DIR" || exit
 
