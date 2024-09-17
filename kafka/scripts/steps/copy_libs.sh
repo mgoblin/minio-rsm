@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/bash -e
 
 cwd=$(pwd)
-pushd "$cwd" || exit
+pushd "$cwd" > /dev/null
 
 source ../env.sh
 
@@ -12,6 +12,6 @@ then
   gradle clean build
 fi
 
-tar -C "$KAFKA_BASE_DIR/libs" -xvf "$DISTRIBUTION_FILE" --strip-components 1
+tar -C "$KAFKA_BASE_DIR/libs" -xvf "$DISTRIBUTION_FILE" --strip-components 1 > /dev/null
 
-popd || exit
+popd > /dev/null
