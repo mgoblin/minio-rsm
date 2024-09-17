@@ -21,6 +21,6 @@ sleep 1s
 timeout 30s grep -q 'Kafka Server started' <(tail -f "$KAFKA_BASE_DIR/logs/server.log") || exit 1
 
 cd "$cwd"/steps || exit
-./create_tiered_topic.sh
+./create_tiered_topic.sh topic1
 
 popd || exit
