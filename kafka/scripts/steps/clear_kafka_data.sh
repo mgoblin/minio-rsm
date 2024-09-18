@@ -7,4 +7,4 @@ source ../env.sh
 
 rm -rf "${KAFKA_DATA_DIR:?}"/*
 
-popd
+popd > /dev/null

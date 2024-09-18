@@ -6,13 +6,13 @@ pushd "$cwd" > /dev/null
 source ../env.sh
 
 ./clear_kafka_data.sh
-./copy
+./copy_kafka_config_file.sh kraft/server.properties
 
-cp ../../config/kraft/server.properties "$KAFKA_BASE_DIR/config/kraft/server.properties"
-
+# Get UUID
 cd "$KAFKA_BASE_DIR"
 UUID="$(bin/kafka-storage.sh random-uuid)"
 
+# Format storage
 bin/kafka-storage.sh format \
 -g \
 -t "$UUID" \
