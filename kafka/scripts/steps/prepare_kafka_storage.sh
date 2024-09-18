@@ -6,6 +6,7 @@ pushd "$cwd" > /dev/null
 source ../env.sh
 
 ./clear_kafka_data.sh
+./copy
 
 cp ../../config/kraft/server.properties "$KAFKA_BASE_DIR/config/kraft/server.properties"
 
