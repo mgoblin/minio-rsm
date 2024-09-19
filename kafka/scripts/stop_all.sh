@@ -5,11 +5,11 @@ pushd "$cwd" > /dev/null
 
 source ./env.sh
 
-cd "$KAFKA_BASE_DIR"
-
-bin/kafka-server-stop.sh
-
-cd "$cwd"
+cd ./steps
+echo "Stop Kafka server"
+./stop_kafka_server.sh
+echo "Done"
+cd ..
 
 pid=$(pgrep minio)
 
