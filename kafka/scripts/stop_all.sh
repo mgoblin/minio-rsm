@@ -1,23 +1,21 @@
-#!/bin/bash
+#!/bin/bash -e
 
 cwd=$(pwd)
-pushd "$cwd" || exit
+pushd "$cwd" > /dev/null
 
 source ./env.sh
 
-cd "$KAFKA_BASE_DIR" || exit
-
-ls -la || exit
+cd "$KAFKA_BASE_DIR"
 
 bin/kafka-server-stop.sh
 
-cd "$cwd" || exit
+cd "$cwd"
 
 pid=$(pgrep minio)
 
 kill "$pid"
 
-cd "$MINIO_DATA_DIR" || exit
+cd "$MINIO_DATA_DIR"
 rm -rf ./*
 
-popd || exit
+popd > /dev/null
