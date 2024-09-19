@@ -1,5 +1,4 @@
 #!/bin/bash
 
-pid=$(pgrep minio)
-
+pid=$(ps ax | grep "minio server" | grep -v "grep minio"| awk '{print $1}')
 kill "$pid"

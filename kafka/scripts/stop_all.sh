@@ -6,14 +6,13 @@ pushd "$cwd" > /dev/null
 source ./env.sh
 
 cd ./steps
-echo "Stop Kafka server"
+echo "Stopping Kafka server"
 ./stop_kafka_server.sh
 echo "Done"
+echo "Stopping Minio server"
+./stop_minio_server.sh
+echo "Done"
 cd ..
-
-pid=$(pgrep minio)
-
-kill "$pid"
 
 cd "$MINIO_DATA_DIR"
 rm -rf ./*
